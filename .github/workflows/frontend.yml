@@ -9,6 +9,8 @@ on:
     branches: [main]
     paths:
       - 'client/**'
+    workflow_dispatch:  # ← ajouter cette ligne
+
 
 jobs:
   test:
