@@ -9,6 +9,8 @@ on:
     branches: [main]
     paths:
       - 'server/**'
+  workflow_dispatch:  # ← permet de lancer manuellement
+
 
 jobs:
   test:
