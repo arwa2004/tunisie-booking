@@ -1,0 +1,165 @@
+---
+title: "Résumé du projet TunisieBooking"
+author: "BlackboxAI"
+date: "\n\n"
+---
+
+# Vue d’ensemble
+Le projet **TunisieBooking** est une application de réservation (voyages / destinations / hôtels) découpée en **3 parties** :
+
+1. **Back-end API** (Laravel) : expose des endpoints JSON et gère l’authentification.
+2. **Front-end Symfony (Twig)** : rend des pages côté serveur et appelle l’API.
+3. **Front-end Next.js / React** : rend une UI côté client et fournit pages login/register ainsi que des écrans liste/détail.
+
+# 1) Back-end : tunisie-booking-api (Laravel)
+## 1.1 Responsabilités
+- Expose une API REST pour récupérer :
+  - **Destinations** (`/destinations`)
+  - **Hôtels** (`/hotels`)
+  - **Voyages** (`/voyages`)
+- Fournit de la **documentation via routes** (routes publiques et protégées).
+- Gère l’**authentification** (type token Sanctum).
+
+## 1.2 Routes API
+- **Routes publiques** (accessibles sans être connecté) :
+  - `POST /register`
+  - `POST /login`
+  - `GET /destinations` et `GET /destinations/{id}` (via apiResource)
+  - `GET /hotels` et `GET /hotels/{id}` (via apiResource)
+  - `GET /voyages` et `GET /voyages/{id}` (via apiResource)
+
+- **Routes protégées** (middleware `auth:sanctum`) :
+  - `GET /user` : retourne l’utilisateur connecté
+  - `POST /logout` : déconnexion (suppression/destroy du token)
+
+## 1.3 Données (DB) : migrations et seeders
+Le back inclut :
+- **Migrations** (structure de la DB). Exemple : migration de la table `voyages`.
+- **Seeders** : initialisation/peuplement.
+  - Exemple : `DestinationSeeder.php`, `VoyageSeeder.php`.
+
+## 1.4 Imports / Fetch data
+Le back contient des **commandes Artisan** pour alimenter la base :
+- `FetchHotelsCommand.php`
+- `FetchVoyagesCommand.php`
+
+Ces commandes servent typiquement à récupérer des données externes (ou à préparer des données) puis à les écrire en base.
+
+## 1.5 Modèles
+- `Voyage.php` (modèle Eloquent)
+- (d’autres modèles existent dans le dépôt, dont ceux liés aux destinations/hôtels/réservations/utilisateurs)
+
+# 2) Front Symfony : tunisie-booking-front (Twig + Symfony Controllers)
+## 2.1 Responsabilités
+- Rendre des pages **Twig** côté serveur.
+- Récupérer les données en appelant l’API Laravel via `HttpClientInterface`.
+- Passer les données au rendu : listes et pages détail.
+- Intégrer une logique de calcul **métier** (ex : nb de nuits).
+
+## 2.2 Point d’entrée API
+Les contrôleurs Symfony utilisent une base API du type :
+- `http://127.0.0.1:8000/api`
+
+## 2.3 Pages & contrôleurs
+### Home
+- `HomeController`
+- Affiche :
+  - la liste des **destinations**
+  - une sélection de **voyages** (ex: seulement les 4 premiers)
+
+### Destinations
+- `DestinationController`
+- `GET /destinations`
+  - appelle l’API `GET /destinations`
+  - rend `templates/destination/index.html.twig`
+
+- `GET /destinations/{id}`
+  - appelle l’API `GET /destinations/{id}`
+  - lit aussi des paramètres URL :
+    - `arrivee`, `depart`
+    - `adultes`, `enfants`, `chambres`
+  - calcule `nb_nuits` via différence entre dates
+  - rend `templates/destination/show.html.twig`
+
+### Hôtels
+- `HotelController`
+- `GET /hotels`
+  - lit des filtres depuis query string :
+    - `destination_id`
+    - `etoiles`
+    - `prix_max`
+  - appelle `GET /hotels` avec paramètres (query)
+  - récupère aussi `GET /destinations` pour construire le formulaire de filtre
+  - rend `templates/hotel/index.html.twig`
+
+- `GET /hotels/{id}`
+  - appelle `GET /hotels/{id}`
+  - rend `templates/hotel/show.html.twig`
+
+### Voyages
+- `VoyageController`
+- `GET /voyages`
+  - appelle `GET /voyages`
+  - rend `templates/voyage/index.html.twig`
+
+- `GET /voyages/{id}`
+  - appelle `GET /voyages/{id}`
+  - rend `templates/voyage/show.html.twig`
+
+## 2.4 Front Twig : gabarits communs
+- `base.html.twig` : structure HTML + import CSS/JS + include navbar/footer.
+- `_navbar.html.twig` : barre de navigation.
+- `_footer.html.twig` : pied de page.
+
+# 3) Front Next.js / React : client/
+## 3.1 Responsabilités
+- UI moderne React/Next pour :
+  - pages d’auth : **login** et **register**
+  - écrans liste/détail pour **destinations / hôtels / voyages**
+- Contient des composants partagés (ex : Navbar).
+
+## 3.2 Structure (App Router)
+- `client/src/app/login/page.tsx`
+- `client/src/app/register/page.tsx`
+- Dossiers :
+  - `client/src/app/destinations/` (+ `[id]`)
+  - `client/src/app/hotels/`
+  - `client/src/app/voyages/` (+ `[id]`)
+
+## 3.3 Composants
+- `client/src/components/Navbar.tsx`
+  - Barre de navigation React.
+
+## 3.4 Dépendances clés
+- Next.js, React
+- `react-datepicker` (présence d’un sélecteur de date)
+
+# 4) Flux utilisateur (schéma mental)
+1. L’utilisateur visite une page Symfony (home / destinations / hôtels / voyages).
+2. Le contrôleur Symfony appelle le **Laravel API**.
+3. Les données JSON retournées sont injectées dans les **templates Twig**.
+4. En parallèle, le front Next.js propose des pages React (notamment login/register et écrans métier).
+
+# 5) Ce qui a été ajouté / mis en place (résumé “ajouts back/front”)
+## Back-end (Laravel)
+- Endpoints REST pour **destinations**, **hotels**, **voyages**.
+- **Auth** via login/register + routes protégées Sanctum.
+- Migrations + seeders (ex : destination/voyages).
+- Commandes Artisan d’import/fetch pour alimenter la DB.
+
+## Front Symfony (Twig)
+- Contrôleurs qui consomment l’API Laravel (HttpClient).
+- Templates Twig dédiés :
+  - home, destinations (index/show), hôtels (index/show), voyages (index/show)
+- Logique `nb_nuits` calculée à partir des dates passées dans l’URL.
+- Form de filtres côté hôtels (destination_id, étoiles, prix_max) transmis à l’API.
+
+## Front Next.js (React)
+- Pages d’auth `login` / `register`.
+- Pages liste/détail pour les entités (destinations/hôtels/voyages).
+- Composant Navbar React.
+
+---
+
+# Notes
+Ce résumé se base sur l’arborescence et les fichiers observés dans le dépôt (controllers Symfony, routes Laravel, migrations/seeders/commands, et structure Next.js).
