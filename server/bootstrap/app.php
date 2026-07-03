@@ -17,5 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->report(function (\Throwable $e) {
+            if (app()->bound('sentry')) {
+                \Sentry\captureException($e);
+            }
+        });
     })->create();
