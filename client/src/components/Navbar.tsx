@@ -10,11 +10,41 @@ export default function Navbar() {
   const [selectedLang, setSelectedLang] = useState("FR");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside
+  const [isClient, setIsClient] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    window.location.href = "/";
+  };
+
+  // Close dropdowns on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setLangDropdownOpen(false);
+      }
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setProfileDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -26,6 +56,9 @@ export default function Navbar() {
     { code: "EN", label: "English", flag: "🇬🇧" },
     { code: "AR", label: "العربية", flag: "🇹🇳" },
   ];
+
+  const getInitials = (u: any) =>
+    `${u?.prenom?.charAt(0) ?? ""}${u?.nom?.charAt(0) ?? ""}`.toUpperCase();
 
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between h-[68px] px-6 md:px-12 bg-white/97 backdrop-blur-md shadow-sm border-b border-gray-100">
@@ -114,19 +147,87 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Remplacer les anciens liens statiques par ceci */}
-        <Link
-          href="/login"
-          className="text-sm font-semibold text-[#1a1a2e] hover:text-[#e91e8c] hover:bg-[#e91e8c]/7 px-4 py-2 rounded-lg transition-all"
-        >
-          Connexion
-        </Link>
-        <Link
-          href="/register"
-          className="bg-gradient-to-r from-[#e91e8c] to-[#c2185b] hover:shadow-lg hover:shadow-[#e91e8c]/35 text-white px-5 py-[10px] rounded-xl font-bold text-sm tracking-wide transition-all transform hover:-translate-y-[2px]"
-        >
-          S'inscrire
-        </Link>
+        {isClient && user ? (
+          <div className="flex items-center gap-3">
+            {user.role === "admin" && (
+              <Link
+                href="/admin"
+                className="text-sm font-semibold text-[#e91e8c] hover:bg-[#e91e8c]/7 px-4 py-2 rounded-lg transition-all"
+              >
+                Admin
+              </Link>
+            )}
+
+            {/* Profile dropdown */}
+            <div className="relative" ref={profileDropdownRef}>
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 pl-2 pr-3 py-[6px] rounded-full border border-gray-200 hover:border-[#e91e8c] transition-all duration-300"
+              >
+                <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#e91e8c] to-[#c2185b] text-white text-xs font-bold flex items-center justify-center">
+                  {getInitials(user)}
+                </span>
+                <span className="hidden sm:inline text-sm font-semibold text-gray-700">
+                  {user.prenom}
+                </span>
+                <span className="text-gray-400 text-xs">▾</span>
+              </button>
+
+              {profileDropdownOpen && (
+                <div className="absolute right-0 top-[52px] bg-white rounded-xl shadow-xl border border-gray-100 min-w-[200px] overflow-hidden z-[200]">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-bold text-[#1a1a2e] truncate">
+                      {user.prenom} {user.nom}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                  </div>
+
+                  <Link
+                    href="/profil"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-[10px] text-sm text-gray-700 hover:bg-gray-50 hover:text-[#e91e8c] transition-colors"
+                  >
+                    👤 Profil
+                  </Link>
+                  <Link
+                    href="/reservations"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-[10px] text-sm text-gray-700 hover:bg-gray-50 hover:text-[#e91e8c] transition-colors"
+                  >
+                    📋 Mes réservations
+                  </Link>
+
+                  <div className="border-t border-gray-100" />
+
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-[10px] text-sm text-red-500 hover:bg-red-50 transition-colors text-left"
+                  >
+                    🚪 Déconnexion
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              className="text-sm font-semibold text-[#1a1a2e] hover:text-[#e91e8c] hover:bg-[#e91e8c]/7 px-4 py-2 rounded-lg transition-all"
+            >
+              Connexion
+            </Link>
+            <Link
+              href="/register"
+              className="bg-gradient-to-r from-[#e91e8c] to-[#c2185b] hover:shadow-lg hover:shadow-[#e91e8c]/35 text-white px-5 py-[10px] rounded-xl font-bold text-sm tracking-wide transition-all transform hover:-translate-y-[2px]"
+            >
+              S'inscrire
+            </Link>
+          </>
+        )}
       </div>
     </nav>
   );

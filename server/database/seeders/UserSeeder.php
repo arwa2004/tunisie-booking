@@ -10,6 +10,19 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // Compte admin unique
+        DB::table('users')->insert([
+            'nom'        => 'Admin',
+            'prenom'     => 'Super',
+            'email'      => 'admin@gmail.com',
+            'telephone'  => '00000000',
+            'password'   => Hash::make('admin1234'),
+            'role'       => 'admin',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Clients
         $users = [
             ['nom' => 'Ben Amar',    'prenom' => 'Arwa',    'email' => 'arwa@example.com',    'telephone' => '20123456'],
             ['nom' => 'Trabelsi',    'prenom' => 'Mohamed', 'email' => 'mohamed@example.com', 'telephone' => '22334455'],
@@ -25,6 +38,7 @@ class UserSeeder extends Seeder
                 'email'      => $user['email'],
                 'telephone'  => $user['telephone'],
                 'password'   => Hash::make('password123'),
+                'role'       => 'client',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

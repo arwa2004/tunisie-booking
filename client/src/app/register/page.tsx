@@ -51,7 +51,7 @@ export default function RegisterPage() {
       }
 
       // Stocker le token et rediriger
-      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       router.push("/");
     } catch {

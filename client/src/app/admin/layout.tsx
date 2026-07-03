@@ -4,94 +4,187 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 
-const menuItems = [
-  { href: "/admin",              icon: "📊", label: "Dashboard"     },
-  { href: "/admin/hotels",       icon: "🏨", label: "Hôtels"        },
-  { href: "/admin/destinations", icon: "📍", label: "Destinations"  },
-  { href: "/admin/voyages",      icon: "✈️",  label: "Voyages"       },
-  { href: "/admin/reservations", icon: "📋", label: "Réservations"  },
-  { href: "/admin/users",        icon: "👥", label: "Utilisateurs"  },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+
+interface AuthUser {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: "admin" | "client";
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<{ nom: string; prenom: string } | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const token     = localStorage.getItem("token");
-    const userData  = localStorage.getItem("user");
+    const verifyAccess = async () => {
+      const token = localStorage.getItem("token");
 
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
 
-    if (userData) setUser(JSON.parse(userData));
+      try {
+        // On revérifie toujours côté serveur (source de vérité),
+        // le localStorage seul peut être trafiqué par l'utilisateur.
+        const res = await fetch(`${API_URL}/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          router.replace("/login");
+          return;
+        }
+
+        if (!res.ok) throw new Error("Erreur de vérification");
+
+        const currentUser: AuthUser = await res.json();
+        localStorage.setItem("user", JSON.stringify(currentUser));
+
+        if (currentUser.role !== "admin") {
+          router.replace("/"); // renvoie un client normal vers le site public
+          return;
+        }
+
+        setUser(currentUser);
+      } catch (err) {
+        router.replace("/login");
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    verifyAccess();
   }, [router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      await fetch(`${API_URL}/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      // même si l'appel échoue, on nettoie le localStorage
+    }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    router.push("/login");
+    router.replace("/login");
   };
 
+  if (checking) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          color: "#1a1a2e",
+        }}
+      >
+        Vérification des accès...
+      </div>
+    );
+  }
+
+  if (!user) return null; // redirection déjà en cours
+
+  const isSuperAdmin = user.email === "admin@gmail.com";
+
+  const menuItems = [
+    { href: "/admin", label: "Dashboard", icon: "📊" },
+    { href: "/admin/hotels", label: "Hôtels", icon: "🏨" },
+    { href: "/admin/destinations", label: "Destinations", icon: "📍" },
+    { href: "/admin/voyages", label: "Voyages", icon: "✈️" },
+    { href: "/admin/reservations", label: "Réservations", icon: "📋" },
+    ...(isSuperAdmin ? [{ href: "/admin/users", label: "Utilisateurs", icon: "👥" }] : []),
+  ];
+
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      <aside
+        style={{
+          width: "230px",
+          background: "#1a1a2e",
+          color: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "1.5rem 0",
+        }}
+      >
+        <div>
+          <div style={{ padding: "0 1.2rem", marginBottom: "2rem" }}>
+            <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>
+              TunisieBooking
+            </div>
+            <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>
+              Administration
+            </div>
+          </div>
 
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-[#1a1a2e] text-white flex flex-col fixed h-full z-10">
-
-        {/* Logo */}
-        <div className="px-6 py-5 border-b border-white/10">
-          <span className="text-xl font-extrabold">
-            Tunisie<span className="text-[#e91e8c]">Booking</span>
-          </span>
-          <p className="text-xs text-gray-400 mt-1">Administration</p>
+          <nav>
+            {menuItems.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                    padding: "0.7rem 1.2rem",
+                    margin: "0.2rem 0.8rem",
+                    borderRadius: "8px",
+                    color: "#fff",
+                    textDecoration: "none",
+                    background: active ? "#e91e8c" : "transparent",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  <span>{item.icon}</span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Menu */}
-        <nav className="flex-1 px-4 py-6 space-y-1">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-[#e91e8c] text-white"
-                    : "text-gray-400 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User + Logout */}
-        <div className="px-4 py-4 border-t border-white/10">
-          {user && (
-            <p className="text-sm text-gray-400 mb-3 px-2">
-              👤 {user.prenom} {user.nom}
-            </p>
-          )}
+        <div style={{ padding: "0 1.2rem" }}>
+          <div style={{ fontSize: "0.85rem", marginBottom: "0.8rem" }}>
+            👤 {user.prenom} {user.nom}
+          </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-red-500/20 hover:text-red-400 transition-all"
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.3)",
+              color: "#fff",
+              borderRadius: "6px",
+              padding: "0.4rem 0.8rem",
+              cursor: "pointer",
+              fontSize: "0.8rem",
+              width: "100%",
+            }}
           >
-            🚪 Déconnexion
+            Déconnexion
           </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="ml-64 flex-1 p-8">
-        {children}
-      </main>
-
+      <main style={{ flex: 1, background: "#f5f6fa", padding: "2.5rem" }}>{children}</main>
     </div>
   );
 }

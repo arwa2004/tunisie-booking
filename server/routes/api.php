@@ -1,53 +1,80 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DestinationController;
 use App\Http\Controllers\Api\HotelController;
-use App\Http\Controllers\Api\AuthController; // <-- Import de AuthController
-use App\Http\Controllers\Api\VoyageController;
 use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\UserController;
-
+use App\Http\Controllers\Api\VoyageController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Routes Publiques (Accessibles sans connexion)
+| Routes publiques
 |--------------------------------------------------------------------------
 */
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::apiResource('destinations', DestinationController::class)->only(['index', 'show']);
-Route::apiResource('hotels', HotelController::class)->only(['index', 'show']);
-Route::apiResource('voyages', VoyageController::class)->only(['index', 'show']);
+Route::get('/destinations', [DestinationController::class, 'index']);
+Route::get('/destinations/{destination}', [DestinationController::class, 'show']);
+
+Route::get('/hotels', [HotelController::class, 'index']);
+Route::get('/hotels/{hotel}', [HotelController::class, 'show']);
+
+Route::get('/voyages', [VoyageController::class, 'index']);
+Route::get('/voyages/{voyage}', [VoyageController::class, 'show']);
 
 /*
 |--------------------------------------------------------------------------
-| Routes Protégées (Connexion obligatoire via Jeton/Token Sanctum)
+| Routes authentifiées (n'importe quel utilisateur connecté)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth:sanctum')->group(function () {
 
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/me', [AuthController::class, 'updateProfile']);
+    Route::put('/me/password', [AuthController::class, 'updatePassword']);
+    Route::post('/me/photo', [AuthController::class, 'updatePhoto']); // <-- AJOUTER CETTE LIGNE
+
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Réservations
-    Route::apiResource('reservations', ReservationController::class);
+    Route::post('/reservations', [ReservationController::class, 'store']);
     Route::get('/mes-reservations', [ReservationController::class, 'mesReservations']);
+});
 
-    // Admin Users
+/*
+|--------------------------------------------------------------------------
+| Routes admin uniquement
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    // Destinations (index/show déjà publics au-dessus)
+    Route::post('/destinations', [DestinationController::class, 'store']);
+    Route::post('/destinations/{destination}', [DestinationController::class, 'update']); // POST + _method=PUT si upload fichier
+    Route::delete('/destinations/{destination}', [DestinationController::class, 'destroy']);
+
+    // Hotels
+    Route::post('/hotels', [HotelController::class, 'store']);
+    Route::post('/hotels/{hotel}', [HotelController::class, 'update']);
+    Route::delete('/hotels/{hotel}', [HotelController::class, 'destroy']);
+
+    // Voyages
+    Route::post('/voyages', [VoyageController::class, 'store']);
+    Route::post('/voyages/{voyage}', [VoyageController::class, 'update']);
+    Route::delete('/voyages/{voyage}', [VoyageController::class, 'destroy']);
+
+    // Reservations (gestion admin)
+    Route::get('/reservations', [ReservationController::class, 'index']);
+    Route::get('/reservations/{reservation}', [ReservationController::class, 'show']);
+    Route::put('/reservations/{reservation}', [ReservationController::class, 'update']);
+    Route::delete('/reservations/{reservation}', [ReservationController::class, 'destroy']);
+
+    // Users
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
-
-    // Admin CRUD complet
-    Route::apiResource('destinations', DestinationController::class)
-        ->except(['index', 'show']);
-    Route::apiResource('hotels', HotelController::class)
-        ->except(['index', 'show']);
-    Route::apiResource('voyages', VoyageController::class)
-        ->except(['index', 'show']);
 });

@@ -35,11 +35,15 @@ export default function LoginPage() {
       }
 
       // Stocker le token et l'utilisateur dans localStorage
-      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Rediriger vers l'accueil
-      router.push("/");
+      // Rediriger dynamiquement selon le rôle
+      if (data.user?.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
     } catch {
       setError("Erreur de connexion au serveur.");
       setLoading(false);
