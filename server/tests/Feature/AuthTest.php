@@ -18,8 +18,8 @@ class AuthTest extends TestCase
             'prenom'               => 'Ahmed',
             'email'                => 'ahmed@test.com',
             'telephone'            => '+21612345678',
-            'password'             => 'password123',
-            'password_confirmation'=> 'password123',
+            'password'             => 'Password123',
+            'password_confirmation'=> 'Password123',
         ]);
 
         $res->assertStatus(201)
@@ -31,12 +31,12 @@ class AuthTest extends TestCase
     {
         User::factory()->create([
             'email'    => 'test@test.com',
-            'password' => bcrypt('password123'),
+            'password' => bcrypt('Password123'),
         ]);
 
         $res = $this->postJson('/api/login', [
             'email'    => 'test@test.com',
-            'password' => 'password123',
+            'password' => 'Password123',
         ]);
 
         $res->assertStatus(200)
@@ -48,7 +48,7 @@ class AuthTest extends TestCase
     {
         User::factory()->create([
             'email'    => 'test@test.com',
-            'password' => bcrypt('password123'),
+            'password' => bcrypt('Password123'),
         ]);
 
         $res = $this->postJson('/api/login', [
