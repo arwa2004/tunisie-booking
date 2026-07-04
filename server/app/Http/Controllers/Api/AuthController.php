@@ -10,61 +10,79 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'nom' => 'required|string|max:255',
-            'prenom' => 'required|string|max:255',
-            'telephone' => 'required|string|max:20',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
-        ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+public function register(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'nom' => 'required|string|max:255',
+        'prenom' => 'required|string|max:255',
+        'telephone' => 'required|string|max:20',
+        'email' => 'required|string|email|max:255|unique:users',
+        // Mot de passe renforcé : 8 caractères min + majuscule + chiffre
+        'password' => [
+            'required',
+            'string',
+            'min:8',
+            'confirmed', // attend password_confirmation
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
+        ],
+    ], [
+        'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
+    ]);
 
-        $user = User::create([
-            'nom' => $request->nom,
-            'prenom' => $request->prenom,
-            'telephone' => $request->telephone,
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    $user = User::create([
+        'nom' => $request->nom,
+        'prenom' => $request->prenom,
+        'telephone' => $request->telephone,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => 'client', // toujours en dur, jamais depuis $request
+    ]);
+
+    $token = $user->createToken('auth_token', ['*'], now()->addDays(7))->plainTextToken;
+
+    return response()->json([
+        'user' => $user,
+        'token' => $token,
+    ], 201);
+}
+
+
+public function login(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        // Log de la tentative échouée (utile pour détecter une attaque)
+        \Illuminate\Support\Facades\Log::channel('security')->warning('Échec de connexion', [
             'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'client', // toute inscription publique est un client, jamais admin
+            'ip' => $request->ip(),
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ], 201);
+        return response()->json(['message' => 'Identifiants incorrects'], 401);
     }
 
-    public function login(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+    $token = $user->createToken('auth_token', ['*'], now()->addDays(7))->plainTextToken;
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+    return response()->json([
+        'user' => $user,
+        'token' => $token,
+    ]);
+}
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Identifiants incorrects'], 401);
-        }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
-        ]);
-    }
 
     public function me(Request $request)
     {
@@ -166,4 +184,12 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Déconnecté']);
     }
+
+
+public function logoutAll(Request $request)
+{
+    $request->user()->tokens()->delete();
+
+    return response()->json(['message' => 'Déconnecté de tous les appareils']);
+}
 }

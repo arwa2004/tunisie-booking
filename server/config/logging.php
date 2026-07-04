@@ -92,6 +92,15 @@ return [
                 'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
             ],
             'processors' => [PsrLogMessageProcessor::class],
+
+            'security' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/security.log'),
+        'level' => 'warning',
+        'days' => 30,
+        ],
+    ],
+
         ],
 
         'stderr' => [
@@ -127,6 +136,6 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
-    ],
+    ];
 
-];
+

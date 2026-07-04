@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VoyageController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PasswordResetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,8 +15,18 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+
+Route::post('/register', [AuthController::class, 'register'])
+    ->middleware('throttle:3,1'); // 3 tentatives / minute
+
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:5,1'); // 5 tentatives / minute
+
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+    ->middleware('throttle:3,1');
+
+Route::post('/reset-password', [PasswordResetController::class, 'reset'])
+    ->middleware('throttle:3,1');
 
 Route::get('/destinations', [DestinationController::class, 'index']);
 Route::get('/destinations/{destination}', [DestinationController::class, 'show']);
