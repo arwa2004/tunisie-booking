@@ -30,7 +30,7 @@ WORKDIR /var/www/html
 
 # --- Dependances PHP (cache Docker : copie composer.* avant le reste) ---
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction --ignore-platform-req=ext-mongodb
 
 # --- Code source ---
 COPY . .
