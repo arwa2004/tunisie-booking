@@ -37,6 +37,7 @@ export default function LoginPage() {
       // Stocker le token et l'utilisateur dans localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      window.dispatchEvent(new Event("auth-change"));
 
       // Rediriger dynamiquement selon le rôle
       if (data.user?.role === "admin") {
@@ -96,7 +97,11 @@ export default function LoginPage() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:border-[#e91e8c] transition-colors text-sm"
               />
             </div>
-
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-xs text-[#e91e8c] hover:underline">
+                Mot de passe oublié ?
+              </Link>
+            </div>
             <button
               type="submit"
               disabled={loading}

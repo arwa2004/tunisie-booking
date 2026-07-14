@@ -2,14 +2,19 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import type { Metadata } from "next";
+import DestinationHotelsSection from "@/components/DestinationHotelsSection";
+import SearchBoxCompact from "@/components/SearchBoxCompact";
 
 interface Hotel {
   id: number;
+  destination_id: number;
   nom: string;
   etoiles: number;
   description: string;
   prix_par_nuit: number;
   image: string;
+  disponible: number;
+  chambres: any[];
 }
 
 interface Destination {
@@ -34,7 +39,7 @@ interface PageProps {
 async function getDestination(id: string): Promise<Destination | null> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
   try {
-    const res = await fetch(`${apiUrl}/destinations/${id}`, { next: { revalidate: 10 } });
+    const res = await fetch(`${apiUrl}/destinations/${id}`, { cache: "no-store" });
     if (res.ok) {
       return await res.json();
     }
@@ -42,6 +47,15 @@ async function getDestination(id: string): Promise<Destination | null> {
     console.error("Failed to fetch destination details:", error);
   }
   return null;
+}
+
+async function getAllDestinations(): Promise<{ id: number; nom: string; region: string }[]> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+  try {
+    const res = await fetch(`${apiUrl}/destinations`, { cache: "no-store" });
+    if (res.ok) return await res.json();
+  } catch {}
+  return [];
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -58,7 +72,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function DestinationShowPage({ params, searchParams }: PageProps) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
-  const destination = await getDestination(resolvedParams.id);
+  const [destination, allDestinations] = await Promise.all([
+    getDestination(resolvedParams.id),
+    getAllDestinations(),
+  ]);
 
   if (!destination) {
     return (
@@ -102,18 +119,33 @@ export default async function DestinationShowPage({ params, searchParams }: Page
       <main className="flex-grow">
         {/* Banner */}
         <section
-          className="relative min-h-[350px] flex flex-col items-center justify-center text-center px-4 py-16 bg-cover bg-center bg-no-repeat"
+          className="relative min-h-[320px] flex flex-col items-center justify-center text-center px-4 py-12 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `linear-gradient(135deg, rgba(26,26,46,0.7), rgba(233,30,140,0.45)), url('${destination.image}')`,
           }}
         >
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-3 drop-shadow-lg">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-2 drop-shadow-lg">
             {destination.nom}
           </h1>
           <p className="text-white/90 text-lg md:text-xl font-medium tracking-wide">
             📍 Région de {destination.region}
           </p>
         </section>
+
+        {/* Barre de recherche compacte */}
+        <div className="bg-gray-50 border-b border-gray-200 px-6 md:px-12 py-4">
+          <div className="max-w-7xl mx-auto">
+            <SearchBoxCompact
+              destinations={allDestinations}
+              currentDestinationId={destination.id}
+              initialArrivee={arrivee}
+              initialDepart={depart}
+              initialAdultes={adultes}
+              initialEnfants={enfants}
+              initialChambres={chambres}
+            />
+          </div>
+        </div>
 
         <div className="px-6 md:px-12 py-12 max-w-7xl mx-auto space-y-16">
           {/* Section Hotels */}
@@ -125,63 +157,16 @@ export default async function DestinationShowPage({ params, searchParams }: Page
               Retrouvez nos meilleures offres d'hébergement
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {destination.hotels && destination.hotels.length > 0 ? (
-                destination.hotels.map((hotel) => {
-                  const totalPrice = hotel.prix_par_nuit * nbNuits * chambres;
-                  return (
-                    <div
-                      key={hotel.id}
-                      className="group bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 flex flex-col"
-                    >
-                      <div className="relative h-[210px] overflow-hidden">
-                        <img
-                          src={hotel.image || "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400"}
-                          alt={hotel.nom}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                      <div className="p-6 flex flex-col flex-grow">
-                        <div className="text-yellow-400 text-sm mb-2">
-                          {Array.from({ length: hotel.etoiles }).map((_, i) => (
-                            <span key={i}>⭐</span>
-                          ))}
-                        </div>
-                        <h3 className="text-lg font-bold text-[#1a1a2e] group-hover:text-[#e91e8c] transition-colors mb-2">
-                          {hotel.nom}
-                        </h3>
-                        <p className="text-gray-500 text-xs leading-relaxed line-clamp-3 mb-6">
-                          {hotel.description}
-                        </p>
-
-                        <div className="border-t border-gray-100 pt-5 mt-auto flex items-end justify-between">
-                          <div>
-                            <div className="text-2xl font-extrabold text-[#e91e8c]">
-                              {totalPrice} TND
-                            </div>
-                            <small className="text-gray-400 text-[0.7rem] font-medium block mt-0.5">
-                              {nbNuits} nuits · {chambres} ch. · {adultes} ad.
-                            </small>
-                          </div>
-
-                          <Link
-                            href={`/hotels/${hotel.id}`}
-                            className="bg-gradient-to-r from-[#e91e8c] to-[#c2185b] hover:shadow-md hover:shadow-[#e91e8c]/35 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all"
-                          >
-                            Voir détails
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full text-center py-12 bg-white rounded-3xl shadow-sm border border-gray-100">
-                  <h3 className="font-bold text-lg text-[#1a1a2e] mb-2">Aucun hôtel trouvé</h3>
-                  <p className="text-gray-500 text-sm">Aucun hôtel disponible dans cette destination.</p>
-                </div>
-              )}
-            </div>
+            <DestinationHotelsSection
+              hotels={destination.hotels}
+              nbNuits={nbNuits}
+              chambresDemandees={chambres}
+              destinationNom={destination.nom}
+              arrivee={arrivee}
+              depart={depart}
+              adultes={adultes}
+              enfants={enfants}
+            />
           </section>
 
           {/* Section Voyages & Circuits */}

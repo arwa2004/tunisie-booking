@@ -18,14 +18,27 @@ interface Voyage {
   image: string;
 }
 
+interface Hotel {
+  id: number;
+  nom: string;
+  etoiles: number;
+  prix_par_nuit: number;
+  image: string;
+  destination?: {
+    id: number;
+    nom: string;
+  };
+}
+
 async function getHomeData() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
-  
+
   let destinations: Destination[] = [];
   let voyages: Voyage[] = [];
+  let hotels: Hotel[] = [];
 
   try {
-    const destRes = await fetch(`${apiUrl}/destinations`, { next: { revalidate: 60 } });
+    const destRes = await fetch(`${apiUrl}/destinations`, { cache: "no-store" });
     if (destRes.ok) {
       destinations = await destRes.json();
     }
@@ -34,7 +47,7 @@ async function getHomeData() {
   }
 
   try {
-    const voyRes = await fetch(`${apiUrl}/voyages`, { next: { revalidate: 60 } });
+    const voyRes = await fetch(`${apiUrl}/voyages`, { cache: "no-store" });
     if (voyRes.ok) {
       const allVoyages: Voyage[] = await voyRes.json();
       voyages = allVoyages.slice(0, 4);
@@ -43,11 +56,31 @@ async function getHomeData() {
     console.error("Failed to fetch voyages:", error);
   }
 
-  return { destinations, voyages };
+  try {
+    const hotelsRes = await fetch(`${apiUrl}/hotels`, { cache: "no-store" });
+    if (hotelsRes.ok) {
+      const data = await hotelsRes.json();
+      const liste: Hotel[] = Array.isArray(data) ? data : data.data || [];
+      hotels = liste.slice(0, 6);
+    }
+  } catch (error) {
+    console.error("Failed to fetch hotels:", error);
+  }
+
+  return { destinations, voyages, hotels };
+}
+
+function renderStars(nb: number) {
+  return (
+    <span className="text-[#e91e8c] text-sm tracking-tight">
+      {"★".repeat(nb)}
+      <span className="text-gray-300">{"★".repeat(5 - nb)}</span>
+    </span>
+  );
 }
 
 export default async function Home() {
-  const { destinations, voyages } = await getHomeData();
+  const { destinations, voyages, hotels } = await getHomeData();
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -105,6 +138,84 @@ export default async function Home() {
                 Aucune destination disponible pour le moment.
               </p>
             )}
+          </div>
+        </section>
+
+        {/* Section Nos Bons Plans (hôtels réels) */}
+        <section className="px-6 md:px-12 py-16 max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
+            <div>
+              <h2 className="text-3xl font-bold text-[#1a1a2e] mb-2">
+                Nos <span className="text-[#e91e8c]">Bons Plans</span>
+              </h2>
+              <p className="text-gray-500 text-base">
+                Les meilleures offres d'hôtels du moment
+              </p>
+            </div>
+            <Link
+              href="/hotels"
+              className="hidden md:inline-block text-[#e91e8c] font-semibold text-sm hover:underline"
+            >
+              Voir tous les hôtels →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {hotels.length > 0 ? (
+              hotels.map((hotel) => (
+                <Link
+                  key={hotel.id}
+                  href={`/hotels/${hotel.id}`}
+                  className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow overflow-hidden border border-gray-100"
+                >
+                  <div className="p-4 pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-bold text-[#1a1a2e] text-sm underline decoration-1 underline-offset-2 line-clamp-1">
+                        {hotel.nom}
+                      </p>
+                      <p className="text-gray-400 text-[10px] whitespace-nowrap pt-0.5">
+                        à partir de*
+                      </p>
+                    </div>
+
+                    <div className="flex items-end justify-between mt-1">
+                      {renderStars(hotel.etoiles)}
+                      <p className="text-[#1a1a2e] font-extrabold text-xl leading-none">
+                        {hotel.prix_par_nuit}
+                        <span className="text-xs font-semibold ml-0.5">DT</span>
+                      </p>
+                    </div>
+
+                    {hotel.destination && (
+                      <p className="text-gray-400 text-xs mt-2 flex items-center gap-1">
+                        📍 {hotel.destination.nom}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={hotel.image || "https://images.unsplash.com/photo-1501117716987-c8e1ecb210f9?w=600"}
+                      alt={hotel.nom}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <p className="text-gray-500 col-span-full text-center py-10">
+                Aucun hôtel disponible pour le moment.
+              </p>
+            )}
+          </div>
+
+          <div className="text-center mt-10 md:hidden">
+            <Link
+              href="/hotels"
+              className="inline-block text-[#e91e8c] font-semibold text-sm hover:underline"
+            >
+              Voir tous les hôtels →
+            </Link>
           </div>
         </section>
 

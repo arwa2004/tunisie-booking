@@ -186,10 +186,10 @@ export default function SearchBoxAdvanced({ destinations }: SearchBoxAdvancedPro
   const removeRoom = (i: number) => { if (rooms.length > 1) setRooms(rooms.filter((_,idx)=>idx!==i)); };
 
   const updateAdults = (idx: number, delta: number) =>
-    setRooms(rooms.map((r,i) => i===idx ? { ...r, adults: Math.max(1, r.adults+delta) } : r));
+    setRooms(rooms.map((r,i) => i===idx ? { ...r, adults: Math.max(1, Math.min(4, r.adults+delta)) } : r));
 
   const addChild = (idx: number) =>
-    setRooms(rooms.map((r,i) => i===idx && r.childrenAges.length<6 ? { ...r, childrenAges:[...r.childrenAges, 2] } : r));
+    setRooms(rooms.map((r,i) => i===idx && r.childrenAges.length<3 ? { ...r, childrenAges:[...r.childrenAges, 8] } : r));
 
   const removeChild = (idx: number) =>
     setRooms(rooms.map((r,i) => i===idx && r.childrenAges.length>0

@@ -20,7 +20,7 @@ interface PageProps {
 async function getVoyage(id: string): Promise<Voyage | null> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
   try {
-    const res = await fetch(`${apiUrl}/voyages/${id}`, { next: { revalidate: 10 } });
+    const res = await fetch(`${apiUrl}/voyages/${id}`, { cache: "no-store" });
     if (res.ok) {
       return await res.json();
     }

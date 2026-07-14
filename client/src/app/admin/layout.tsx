@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import AdminNavbar from "./AdminNavbar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -50,6 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         const currentUser: AuthUser = await res.json();
         localStorage.setItem("user", JSON.stringify(currentUser));
+        window.dispatchEvent(new Event("auth-change"));
 
         if (currentUser.role !== "admin") {
           router.replace("/"); // renvoie un client normal vers le site public
@@ -110,6 +112,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/reservations", label: "Réservations", icon: "📋" },
     ...(isSuperAdmin ? [{ href: "/admin/users", label: "Utilisateurs", icon: "👥" }] : []),
   ];
+
+  // Titre de page dérivé de l'item de menu actif, pour l'afficher dans AdminNavbar
+  const currentPageTitle =
+    menuItems.find((item) => pathname === item.href)?.label || "Administration";
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -184,7 +190,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      <main style={{ flex: 1, background: "#f5f6fa", padding: "2.5rem" }}>{children}</main>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <AdminNavbar user={user} onLogout={handleLogout} pageTitle={currentPageTitle} />
+        <main style={{ flex: 1, background: "#f5f6fa", padding: "2.5rem" }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

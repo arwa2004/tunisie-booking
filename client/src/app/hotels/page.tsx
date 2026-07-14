@@ -45,7 +45,7 @@ async function getHotelsData(params: { destination_id?: string; etoiles?: string
   let destinations: Destination[] = [];
 
   try {
-    const hotelsRes = await fetch(`${apiUrl}/hotels?${query.toString()}`, { next: { revalidate: 10 } });
+    const hotelsRes = await fetch(`${apiUrl}/hotels?${query.toString()}`, { cache: "no-store" });
     if (hotelsRes.ok) {
       hotels = await hotelsRes.json();
     }
@@ -54,7 +54,7 @@ async function getHotelsData(params: { destination_id?: string; etoiles?: string
   }
 
   try {
-    const destRes = await fetch(`${apiUrl}/destinations`, { next: { revalidate: 60 } });
+    const destRes = await fetch(`${apiUrl}/destinations`, { cache: "no-store" });
     if (destRes.ok) {
       destinations = await destRes.json();
     }

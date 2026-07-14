@@ -3,8 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 interface User {
   id: number;
@@ -102,6 +100,7 @@ export default function ProfilPage() {
       }
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
+      window.dispatchEvent(new Event("auth-change"));
       setInfoSuccess(true);
       setTimeout(() => setInfoSuccess(false), 3000);
     } catch {
@@ -164,6 +163,7 @@ export default function ProfilPage() {
       if (res.ok) {
         setUser(data.user);
         localStorage.setItem("user", JSON.stringify(data.user));
+        window.dispatchEvent(new Event("auth-change"));
       } else {
         alert(data.message || "Erreur lors de l'envoi de la photo.");
       }
@@ -194,234 +194,215 @@ export default function ProfilPage() {
   if (!user) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50/50">
-      <Navbar />
-      
-      {/* Container élargi à max-w-7xl au lieu de max-w-5xl */}
-      <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-16">
-        
-        {/* Grille avec un espacement plus grand (gap-10) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-          
-          {/* 1. CARTE PROFIL LATÉRALE AGRANDIE */}
-          <div className="bg-white border border-gray-100 rounded-3xl p-10 shadow-sm flex flex-col items-center text-center">
-            
-            {/* Avatar agrandi (w-32 h-32 au lieu de w-24 h-24) */}
-            <div className="relative group cursor-pointer mb-6" onClick={() => fileInputRef.current?.click()}>
-              {getAvatarUrl(user.photo) ? (
-                <img
-                  src={getAvatarUrl(user.photo)!}
-                  alt={user.prenom}
-                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg group-hover:opacity-75 transition-all"
-                />
-              ) : (
-                <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-[#e91e8c] to-[#c2185b] text-white font-extrabold text-3xl flex items-center justify-center shadow-lg group-hover:opacity-75 transition-all">
-                  {getInitials(user)}
-                </div>
-              )}
-              
-              <div className="absolute inset-0 bg-black/45 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-white text-xs font-bold">📷 Modifier</span>
+    <div className="max-w-7xl mx-auto w-full px-6 py-16">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+        {/* 1. CARTE PROFIL LATÉRALE */}
+        <div className="bg-white border border-gray-100 rounded-3xl p-10 shadow-sm flex flex-col items-center text-center">
+          <div className="relative group cursor-pointer mb-6" onClick={() => fileInputRef.current?.click()}>
+            {getAvatarUrl(user.photo) ? (
+              <img
+                src={getAvatarUrl(user.photo)!}
+                alt={user.prenom}
+                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg group-hover:opacity-75 transition-all"
+              />
+            ) : (
+              <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-[#e91e8c] to-[#c2185b] text-white font-extrabold text-3xl flex items-center justify-center shadow-lg group-hover:opacity-75 transition-all">
+                {getInitials(user)}
               </div>
-              
-              {uploadingPhoto && (
-                <div className="absolute inset-0 bg-white/80 rounded-full flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-[#e91e8c]/25 border-t-[#e91e8c] rounded-full animate-spin" />
-                </div>
-              )}
+            )}
+
+            <div className="absolute inset-0 bg-black/45 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-white text-xs font-bold">📷 Modifier</span>
             </div>
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handlePhotoUpload}
-              accept="image/*"
-              className="hidden"
-            />
-
-            <h2 className="text-2xl font-bold text-[#1a1a2e] flex items-center gap-2 justify-center">
-              {user.prenom} {user.nom}
-              <span className="text-emerald-500 text-base" title="Vérifié">✓</span>
-            </h2>
-            <p className="text-gray-400 text-sm mt-1 mb-6">{user.email}</p>
-
-            <span className={`inline-block text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider mb-8 ${
-              user.role === "admin" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-purple-50 text-purple-700 border border-purple-100"
-            }`}>
-              {user.role === "admin" ? "🛡️ Administrateur" : "👤 Client"}
-            </span>
-
-            <div className="w-full border-t border-gray-100 pt-8">
-              <Link
-                href="/reservations"
-                className="w-full justify-center inline-flex items-center gap-2 bg-[#1a1a2e] text-white font-bold text-sm py-4 rounded-2xl hover:bg-black transition-all active:scale-[0.98]"
-              >
-                📋 Voir mes réservations
-              </Link>
-            </div>
+            {uploadingPhoto && (
+              <div className="absolute inset-0 bg-white/80 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-[#e91e8c]/25 border-t-[#e91e8c] rounded-full animate-spin" />
+              </div>
+            )}
           </div>
 
-          {/* 2. FORMULAIRES DE MODIFICATION PLUS GRANDS */}
-          <div className="lg:col-span-2 space-y-8">
-            
-            {/* Formulaire 1 : Infos personnelles */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 md:p-10">
-              <h3 className="text-xl font-bold text-[#1a1a2e] mb-8 pb-4 border-b border-gray-100">
-                Informations personnelles
-              </h3>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handlePhotoUpload}
+            accept="image/*"
+            className="hidden"
+          />
 
-              {infoSuccess && (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-xl mb-6">
-                  ✓ Votre profil a été mis à jour avec succès.
-                </div>
-              )}
-              {infoErrors.general && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-6">
-                  {infoErrors.general[0]}
-                </div>
-              )}
+          <h2 className="text-2xl font-bold text-[#1a1a2e] flex items-center gap-2 justify-center">
+            {user.prenom} {user.nom}
+            <span className="text-emerald-500 text-base" title="Vérifié">✓</span>
+          </h2>
+          <p className="text-gray-400 text-sm mt-1 mb-6">{user.email}</p>
 
-              <form onSubmit={handleInfoSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    {/* Taille de police du label augmentée à text-sm et gras */}
-                    <label className="block text-sm font-semibold text-gray-600 mb-2">Prénom</label>
-                    {/* inputs avec plus de padding vertical py-3.5 au lieu de py-2.5 */}
-                    <input
-                      type="text"
-                      value={form.prenom}
-                      onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
-                    />
-                    {infoErrors.prenom && (
-                      <p className="text-red-500 text-xs mt-1.5">{infoErrors.prenom[0]}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-600 mb-2">Nom</label>
-                    <input
-                      type="text"
-                      value={form.nom}
-                      onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
-                    />
-                    {infoErrors.nom && (
-                      <p className="text-red-500 text-xs mt-1.5">{infoErrors.nom[0]}</p>
-                    )}
-                  </div>
-                </div>
+          <span className={`inline-block text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider mb-8 ${
+            user.role === "admin" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-purple-50 text-purple-700 border border-purple-100"
+          }`}>
+            {user.role === "admin" ? "🛡️ Administrateur" : "👤 Client"}
+          </span>
 
+          <div className="w-full border-t border-gray-100 pt-8">
+            <Link
+              href="/reservations"
+              className="w-full justify-center inline-flex items-center gap-2 bg-[#1a1a2e] text-white font-bold text-sm py-4 rounded-2xl hover:bg-black transition-all active:scale-[0.98]"
+            >
+              📋 Voir mes réservations
+            </Link>
+          </div>
+        </div>
+
+        {/* 2. FORMULAIRES */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 md:p-10">
+            <h3 className="text-xl font-bold text-[#1a1a2e] mb-8 pb-4 border-b border-gray-100">
+              Informations personnelles
+            </h3>
+
+            {infoSuccess && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-xl mb-6">
+                ✓ Votre profil a été mis à jour avec succès.
+              </div>
+            )}
+            {infoErrors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-6">
+                {infoErrors.general[0]}
+              </div>
+            )}
+
+            <form onSubmit={handleInfoSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
-                  />
-                  {infoErrors.email && (
-                    <p className="text-red-500 text-xs mt-1.5">{infoErrors.email[0]}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-2">Téléphone</label>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">Prénom</label>
                   <input
                     type="text"
-                    value={form.telephone}
-                    onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                    value={form.prenom}
+                    onChange={(e) => setForm({ ...form, prenom: e.target.value })}
                     className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
                   />
-                  {infoErrors.telephone && (
-                    <p className="text-red-500 text-xs mt-1.5">{infoErrors.telephone[0]}</p>
+                  {infoErrors.prenom && (
+                    <p className="text-red-500 text-xs mt-1.5">{infoErrors.prenom[0]}</p>
                   )}
                 </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={savingInfo}
-                    className="bg-gradient-to-r from-[#e91e8c] to-[#c2185b] hover:shadow-lg hover:shadow-[#e91e8c]/35 text-white px-8 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {savingInfo ? "Enregistrement..." : "Enregistrer les modifications"}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Formulaire 2 : Sécurité / Mot de passe */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 md:p-10">
-              <h3 className="text-xl font-bold text-[#1a1a2e] mb-8 pb-4 border-b border-gray-100">
-                Sécurité du compte
-              </h3>
-
-              {pwdSuccess && (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-xl mb-6">
-                  ✓ Votre mot de passe a été modifié avec succès.
-                </div>
-              )}
-              {pwdErrors.general && (
-                <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-6">
-                  {pwdErrors.general[0]}
-                </div>
-              )}
-
-              <form onSubmit={handlePwdSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-2">Mot de passe actuel</label>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">Nom</label>
                   <input
-                    type="password"
-                    value={pwdForm.current_password}
-                    onChange={(e) => setPwdForm({ ...pwdForm, current_password: e.target.value })}
+                    type="text"
+                    value={form.nom}
+                    onChange={(e) => setForm({ ...form, nom: e.target.value })}
                     className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
                   />
-                  {pwdErrors.current_password && (
-                    <p className="text-red-500 text-xs mt-1.5">{pwdErrors.current_password[0]}</p>
+                  {infoErrors.nom && (
+                    <p className="text-red-500 text-xs mt-1.5">{infoErrors.nom[0]}</p>
                   )}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-600 mb-2">Nouveau mot de passe</label>
-                    <input
-                      type="password"
-                      value={pwdForm.new_password}
-                      onChange={(e) => setPwdForm({ ...pwdForm, new_password: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
-                    />
-                    {pwdErrors.new_password && (
-                      <p className="text-red-500 text-xs mt-1.5">{pwdErrors.new_password[0]}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-600 mb-2">Confirmer le mot de passe</label>
-                    <input
-                      type="password"
-                      value={pwdForm.new_password_confirmation}
-                      onChange={(e) => setPwdForm({ ...pwdForm, new_password_confirmation: e.target.value })}
-                      className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
+                />
+                {infoErrors.email && (
+                  <p className="text-red-500 text-xs mt-1.5">{infoErrors.email[0]}</p>
+                )}
+              </div>
 
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={savingPwd}
-                    className="bg-[#1a1a2e] hover:bg-black text-white px-8 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {savingPwd ? "Mise à jour..." : "Modifier le mot de passe"}
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Téléphone</label>
+                <input
+                  type="text"
+                  value={form.telephone}
+                  onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
+                />
+                {infoErrors.telephone && (
+                  <p className="text-red-500 text-xs mt-1.5">{infoErrors.telephone[0]}</p>
+                )}
+              </div>
 
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={savingInfo}
+                  className="bg-gradient-to-r from-[#e91e8c] to-[#c2185b] hover:shadow-lg hover:shadow-[#e91e8c]/35 text-white px-8 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {savingInfo ? "Enregistrement..." : "Enregistrer les modifications"}
+                </button>
+              </div>
+            </form>
           </div>
 
-        </div>
-      </main>
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 md:p-10">
+            <h3 className="text-xl font-bold text-[#1a1a2e] mb-8 pb-4 border-b border-gray-100">
+              Sécurité du compte
+            </h3>
 
-      <Footer />
+            {pwdSuccess && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-xl mb-6">
+                ✓ Votre mot de passe a été modifié avec succès.
+              </div>
+            )}
+            {pwdErrors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-xl mb-6">
+                {pwdErrors.general[0]}
+              </div>
+            )}
+
+            <form onSubmit={handlePwdSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Mot de passe actuel</label>
+                <input
+                  type="password"
+                  value={pwdForm.current_password}
+                  onChange={(e) => setPwdForm({ ...pwdForm, current_password: e.target.value })}
+                  className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
+                />
+                {pwdErrors.current_password && (
+                  <p className="text-red-500 text-xs mt-1.5">{pwdErrors.current_password[0]}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">Nouveau mot de passe</label>
+                  <input
+                    type="password"
+                    value={pwdForm.new_password}
+                    onChange={(e) => setPwdForm({ ...pwdForm, new_password: e.target.value })}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
+                  />
+                  {pwdErrors.new_password && (
+                    <p className="text-red-500 text-xs mt-1.5">{pwdErrors.new_password[0]}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">Confirmer le mot de passe</label>
+                  <input
+                    type="password"
+                    value={pwdForm.new_password_confirmation}
+                    onChange={(e) => setPwdForm({ ...pwdForm, new_password_confirmation: e.target.value })}
+                    className="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:border-[#e91e8c] focus:bg-white text-sm transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={savingPwd}
+                  className="bg-[#1a1a2e] hover:bg-black text-white px-8 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {savingPwd ? "Mise à jour..." : "Modifier le mot de passe"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

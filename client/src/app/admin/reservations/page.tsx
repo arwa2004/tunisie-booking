@@ -15,6 +15,8 @@ interface Reservation {
   prix_total: number;
   user: { id: number; nom: string; prenom: string; email: string } | null;
   hotel: { id: number; nom: string } | null;
+  chambre: { id: number; nom: string } | null;
+  pension: { id: number; nom: string } | null;
 }
 
 const STATUT_STYLES = {
@@ -164,8 +166,11 @@ export default function ReservationsAdminPage() {
 
                   {/* Détails */}
                   <td className="px-5 py-4 text-gray-600 text-xs">
-                    <p>{r.nb_chambres} chambre(s)</p>
-                    <p>{r.nb_adultes} adulte(s) · {r.nb_enfants} enfant(s)</p>
+                    <p className="font-semibold text-gray-800">{r.chambre?.nom ?? "Chambre Standard"}</p>
+                    <p className="text-[#e91e8c] font-medium">{r.pension?.nom ?? "Petit Déjeuner"}</p>
+                    <p className="text-gray-400 mt-1">
+                      {r.nb_chambres} chambre(s) | {r.nb_adultes} A · {r.nb_enfants} E
+                    </p>
                   </td>
 
                   {/* Prix */}

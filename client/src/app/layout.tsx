@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import ConditionalMain from "@/components/ConditionalMain";
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -13,18 +16,13 @@ export const metadata: Metadata = {
   description: "Réservez vos meilleurs hôtels et voyages en Tunisie",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="fr"
-      className={`${outfit.variable} h-full antialiased`}
-    >
+    <html lang="fr" className={`${outfit.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans bg-[#f8f9fa] text-[#1a1a2e]">
-        {children}
+        <SessionProviderWrapper>
+          <ConditionalMain>{children}</ConditionalMain>
+        </SessionProviderWrapper>
       </body>
     </html>
   );

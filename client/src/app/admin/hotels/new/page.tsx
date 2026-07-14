@@ -25,6 +25,11 @@ export default function NewHotelPage() {
     etoiles: "3",
     description: "",
     disponible: true,
+    // ⬇️ NOUVEAU : tarification enfants (valeurs par défaut sensées)
+    age_max_bebe: "2",
+    age_max_enfant: "12",
+    supplement_enfant: "30",
+    supplement_grand_enfant: "50",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -55,6 +60,11 @@ export default function NewHotelPage() {
     formData.append("etoiles", form.etoiles);
     formData.append("description", form.description);
     formData.append("disponible", form.disponible ? "1" : "0");
+    // ⬇️ NOUVEAU : envoi des champs de tarification enfants
+    formData.append("age_max_bebe", form.age_max_bebe);
+    formData.append("age_max_enfant", form.age_max_enfant);
+    formData.append("supplement_enfant", form.supplement_enfant);
+    formData.append("supplement_grand_enfant", form.supplement_grand_enfant);
     if (imageFile) formData.append("image", imageFile);
 
     try {
@@ -174,6 +184,95 @@ export default function NewHotelPage() {
             rows={4}
             className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
           />
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════
+            ⬇️ NOUVEAU : TARIFICATION ENFANTS
+            ══════════════════════════════════════════════════════════════ */}
+        <div className="border border-gray-200 rounded-xl p-5 space-y-4 bg-gray-50/50">
+          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
+            👶 Tarification enfants
+          </h3>
+          <p className="text-xs text-gray-500 -mt-2">
+            Ces réglages définissent comment les suppléments enfants sont calculés
+            sur la page de réservation de cet hôtel.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Âge max "bébé" (gratuit)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={form.age_max_bebe}
+                  onChange={(e) => setForm({ ...form, age_max_bebe: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-14 focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">ans</span>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Ex: 2 → 0 et 1 an gratuits</p>
+              {errors.age_max_bebe && <p className="text-red-500 text-xs mt-1">{errors.age_max_bebe[0]}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Âge max "enfant"
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="17"
+                  value={form.age_max_enfant}
+                  onChange={(e) => setForm({ ...form, age_max_enfant: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-14 focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">ans</span>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Au-delà = tarif "grand enfant"</p>
+              {errors.age_max_enfant && <p className="text-red-500 text-xs mt-1">{errors.age_max_enfant[0]}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Supplément "enfant" / nuit
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={form.supplement_enfant}
+                  onChange={(e) => setForm({ ...form, supplement_enfant: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">DT</span>
+              </div>
+              {errors.supplement_enfant && <p className="text-red-500 text-xs mt-1">{errors.supplement_enfant[0]}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Supplément "grand enfant" / nuit
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={form.supplement_grand_enfant}
+                  onChange={(e) => setForm({ ...form, supplement_grand_enfant: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400">DT</span>
+              </div>
+              {errors.supplement_grand_enfant && <p className="text-red-500 text-xs mt-1">{errors.supplement_grand_enfant[0]}</p>}
+            </div>
+          </div>
         </div>
 
         {/* Disponible */}

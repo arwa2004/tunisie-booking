@@ -41,8 +41,7 @@ class DestinationController extends Controller
 
     public function show(string $id)
     {
-        $destination = Destination::with('hotels')->find($id);
-
+        $destination = Destination::with('hotels.chambres.pensions')->find($id);
         if (!$destination) {
             return response()->json(['message' => 'Destination non trouvée.'], 404);
         }

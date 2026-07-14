@@ -15,7 +15,7 @@ class HotelApiTest extends TestCase
     private function createHotel(): Hotel
     {
         $destination = Destination::factory()->create();
-        return Hotel::factory()->create([
+        return Hotel::factory()->create([ //Factory génère automatiquement des données fictives + les insère en BDD.
             'destination_id' => $destination->id
         ]);
     }

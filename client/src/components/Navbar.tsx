@@ -1,37 +1,79 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const nextAuthUser = session?.user as any;
+  const nextAuthLoading = status === "loading";
+
+  const [localUser, setLocalUser] = useState<any>(null);
+  const [localLoading, setLocalLoading] = useState(true);
+
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState("FR");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [isClient, setIsClient] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setIsClient(true);
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+  // Charger l'utilisateur depuis localStorage (pour le login email/mot de passe)
+  const loadLocalUser = () => {
+    const stored = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    if (stored && token) {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error(e);
+        setLocalUser(JSON.parse(stored));
+      } catch {
+        setLocalUser(null);
       }
+    } else {
+      setLocalUser(null);
     }
+    setLocalLoading(false);
+  };
+
+  useEffect(() => {
+    loadLocalUser();
+
+    const handleAuthChange = () => loadLocalUser();
+    window.addEventListener("auth-change", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
   }, []);
 
+  // L'utilisateur final = localStorage OU NextAuth (priorité au localStorage)
+  const user = localUser || nextAuthUser || null;
+  const loading = localLoading || nextAuthLoading;
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-    window.location.href = "/";
+    // Si connecté via localStorage (email/mot de passe)
+    const token = localStorage.getItem("token");
+    if (token) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+      fetch(`${apiUrl}/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setLocalUser(null);
+      window.dispatchEvent(new Event("auth-change"));
+      router.push("/");
+      return;
+    }
+
+    // Si connecté via NextAuth (Google, etc.)
+    signOut({ callbackUrl: "/" });
   };
 
   // Close dropdowns on click outside
@@ -61,7 +103,7 @@ export default function Navbar() {
     `${u?.prenom?.charAt(0) ?? ""}${u?.nom?.charAt(0) ?? ""}`.toUpperCase();
 
   return (
-    <nav className="sticky top-0 z-50 flex items-center justify-between h-[68px] px-6 md:px-12 bg-white/97 backdrop-blur-md shadow-sm border-b border-gray-100">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-[68px] px-6 md:px-12 bg-white/97 backdrop-blur-md shadow-sm border-b border-gray-100">
       {/* Logo */}
       <div className="text-2xl font-extrabold tracking-tight">
         <Link href="/" className="no-underline">
@@ -125,7 +167,7 @@ export default function Navbar() {
             🌐 {selectedLang} ▾
           </button>
           {langDropdownOpen && (
-            <div className="absolute right-0 top-[42px] bg-white rounded-xl shadow-xl border border-gray-100 min-width-[160px] overflow-hidden z-[200]">
+            <div className="absolute right-0 top-[42px] bg-white rounded-xl shadow-xl border border-gray-100 min-w-[160px] overflow-hidden z-[200]">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
@@ -147,7 +189,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {isClient && user ? (
+        {!loading && user ? (
           <div className="flex items-center gap-3">
             {user.role === "admin" && (
               <Link
@@ -213,20 +255,22 @@ export default function Navbar() {
             </div>
           </div>
         ) : (
-          <>
-            <Link
-              href="/login"
-              className="text-sm font-semibold text-[#1a1a2e] hover:text-[#e91e8c] hover:bg-[#e91e8c]/7 px-4 py-2 rounded-lg transition-all"
-            >
-              Connexion
-            </Link>
-            <Link
-              href="/register"
-              className="bg-gradient-to-r from-[#e91e8c] to-[#c2185b] hover:shadow-lg hover:shadow-[#e91e8c]/35 text-white px-5 py-[10px] rounded-xl font-bold text-sm tracking-wide transition-all transform hover:-translate-y-[2px]"
-            >
-              S'inscrire
-            </Link>
-          </>
+          !loading && (
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-semibold text-[#1a1a2e] hover:text-[#e91e8c] hover:bg-[#e91e8c]/7 px-4 py-2 rounded-lg transition-all"
+              >
+                Connexion
+              </Link>
+              <Link
+                href="/register"
+                className="bg-gradient-to-r from-[#e91e8c] to-[#c2185b] hover:shadow-lg hover:shadow-[#e91e8c]/35 text-white px-5 py-[10px] rounded-xl font-bold text-sm tracking-wide transition-all transform hover:-translate-y-[2px]"
+              >
+                S'inscrire
+              </Link>
+            </>
+          )
         )}
       </div>
     </nav>

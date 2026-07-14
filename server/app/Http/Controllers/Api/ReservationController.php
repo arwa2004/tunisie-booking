@@ -11,7 +11,7 @@ class ReservationController extends Controller
     // GET /api/reservations → toutes les réservations (admin)
     public function index()
     {
-        $reservations = Reservation::with(['user', 'hotel'])->get();
+        $reservations = Reservation::with(['user', 'hotel.destination', 'chambre', 'pension'])->get();
         return response()->json($reservations);
     }
 
@@ -19,40 +19,72 @@ class ReservationController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'hotel_id'     => 'required|exists:hotels,id',
-            'date_arrivee' => 'required|date',
-            'date_depart'  => 'required|date|after:date_arrivee',
-            'nb_chambres'  => 'required|integer|min:1',
-            'nb_adultes'   => 'required|integer|min:1',
-            'nb_enfants'   => 'integer|min:0',
+            'hotel_id'       => 'required|exists:hotels,id',
+            'chambre_id'     => 'required|exists:chambres,id',
+            'pension_id'     => 'nullable|exists:pensions,id',  // ← AJOUTER
+            'date_arrivee'   => 'required|date',
+            'date_depart'    => 'required|date|after:date_arrivee',
+            'nb_chambres'    => 'required|integer|min:1',
+            'nb_adultes'     => 'required|integer|min:1',
+            'nb_enfants'     => 'integer|min:0',
+            'ages_enfants'   => 'nullable|array',
+            'ages_enfants.*' => 'integer|min:0|max:17',
         ]);
 
-        // Calcul automatique du prix total
-        $hotel = \App\Models\Hotel::find($request->hotel_id);
-        $dateArrivee = new \DateTime($request->date_arrivee);
-        $dateDepart  = new \DateTime($request->date_depart);
-        $nbNuits     = $dateArrivee->diff($dateDepart)->days;
-        $prixTotal   = $nbNuits * $hotel->prix_par_nuit * $request->nb_chambres;
+        $chambre = \App\Models\Chambre::find($request->chambre_id);
+
+        // Récupérer le supplément pension depuis la table pivot
+        $supplementPension = 0;
+        if ($request->pension_id) {
+            // On cherche la pension dans les pensions attachées à cette chambre
+            $pensionPivot = $chambre->pensions()->where('pension_id', $request->pension_id)->first();
+            if ($pensionPivot) {
+                $supplementPension = $pensionPivot->pivot->supplement_prix;
+            }
+        }
+
+        // Validation 1 : Vérifier que la chambre appartient bien à l'hôtel choisi
+        if ($chambre->hotel_id !== (int) $request->hotel_id) {
+            return response()->json(['message' => 'La chambre sélectionnée n\'appartient pas à cet hôtel.'], 422);
+        }
+
+        // Validation 2 : Vérifier que la chambre a la capacité d'accueillir les personnes
+        if (!$chambre->peutAccueillir($request->nb_adultes, $request->nb_enfants ?? 0)) {
+            return response()->json(['message' => 'La capacité de cette chambre est insuffisante pour le nombre de personnes.'], 422);
+        }
+
+        // Instancier temporairement la réservation pour utiliser la logique métier du modèle
+        $tempReservation = new Reservation([
+            'date_arrivee' => $request->date_arrivee,
+            'date_depart'  => $request->date_depart,
+            'nb_chambres'  => $request->nb_chambres,
+            'ages_enfants' => $request->ages_enfants ?? [],
+        ]);
+
+        $prixTotal = $tempReservation->calculatePrixTotal($chambre->prix_base_nuit, $supplementPension);
 
         $reservation = Reservation::create([
             'user_id'      => $request->user()->id,
             'hotel_id'     => $request->hotel_id,
+            'chambre_id'   => $request->chambre_id,
+            'pension_id'   => $request->pension_id,
             'date_arrivee' => $request->date_arrivee,
             'date_depart'  => $request->date_depart,
             'nb_chambres'  => $request->nb_chambres,
             'nb_adultes'   => $request->nb_adultes,
             'nb_enfants'   => $request->nb_enfants ?? 0,
+            'ages_enfants' => $request->ages_enfants ?? [],
             'prix_total'   => $prixTotal,
             'statut'       => 'en_attente',
         ]);
 
-        return response()->json($reservation->load(['user', 'hotel']), 201);
+        return response()->json($reservation->load(['user', 'hotel', 'chambre','pension']), 201);
     }
 
     // GET /api/reservations/{id} → une réservation
     public function show($id)
     {
-        $reservation = Reservation::with(['user', 'hotel'])->find($id);
+        $reservation = Reservation::with(['user', 'hotel', 'chambre'])->find($id);
 
         if (!$reservation) {
             return response()->json(['message' => 'Réservation non trouvée'], 404);
@@ -96,7 +128,7 @@ class ReservationController extends Controller
     // GET /api/mes-reservations → réservations de l'utilisateur connecté
     public function mesReservations(Request $request)
     {
-        $reservations = Reservation::with(['hotel', 'hotel.destination'])
+        $reservations = Reservation::with(['hotel', 'hotel.destination', 'chambre'])
             ->where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
             ->get();

@@ -33,13 +33,19 @@ class HotelController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'destination_id' => 'required|exists:destinations,id',
-            'nom'            => 'required|string|max:255',
-            'prix_par_nuit'  => 'required|integer|min:0',
-            'etoiles'        => 'required|integer|min:1|max:5',
-            'description'    => 'nullable|string',
-            'disponible'     => 'nullable|boolean',
-            'image'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096', // 4 Mo max
+            'destination_id'          => 'required|exists:destinations,id',
+            'nom'                     => 'required|string|max:255',
+            'prix_par_nuit'           => 'required|integer|min:0',
+            'etoiles'                 => 'required|integer|min:1|max:5',
+            'description'             => 'nullable|string',
+            'disponible'              => 'nullable|boolean',
+            'image'                   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096', // 4 Mo max
+
+            // ⬇️ AJOUTÉ : tarification enfants configurable par l'admin
+            'age_max_bebe'            => 'nullable|integer|min:0|max:10',
+            'age_max_enfant'          => 'nullable|integer|min:0|max:17',
+            'supplement_enfant'       => 'nullable|numeric|min:0',
+            'supplement_grand_enfant' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -62,7 +68,7 @@ class HotelController extends Controller
 
     public function show(string $id)
     {
-        $hotel = Hotel::with('destination')->find($id);
+        $hotel = Hotel::with(['destination', 'chambres.pensions', 'services', 'photos'])->find($id);
 
         if (!$hotel) {
             return response()->json(['message' => 'Hôtel non trouvé.'], 404);
@@ -80,13 +86,19 @@ class HotelController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'destination_id' => 'sometimes|required|exists:destinations,id',
-            'nom'            => 'sometimes|required|string|max:255',
-            'prix_par_nuit'  => 'sometimes|required|integer|min:0',
-            'etoiles'        => 'sometimes|required|integer|min:1|max:5',
-            'description'    => 'nullable|string',
-            'disponible'     => 'nullable|boolean',
-            'image'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'destination_id'          => 'sometimes|required|exists:destinations,id',
+            'nom'                     => 'sometimes|required|string|max:255',
+            'prix_par_nuit'           => 'sometimes|required|integer|min:0',
+            'etoiles'                 => 'sometimes|required|integer|min:1|max:5',
+            'description'             => 'nullable|string',
+            'disponible'              => 'nullable|boolean',
+            'image'                   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+
+            // ⬇️ AJOUTÉ : tarification enfants configurable par l'admin
+            'age_max_bebe'            => 'nullable|integer|min:0|max:10',
+            'age_max_enfant'          => 'nullable|integer|min:0|max:17',
+            'supplement_enfant'       => 'nullable|numeric|min:0',
+            'supplement_grand_enfant' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {

@@ -53,6 +53,7 @@ export default function RegisterPage() {
       // Stocker le token et rediriger
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      window.dispatchEvent(new Event("auth-change"));
       router.push("/");
     } catch {
       setError("Erreur de connexion au serveur.");
@@ -81,8 +82,9 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-2">Nom</label>
+                <label htmlFor="nom" className="block text-sm font-semibold text-gray-600 mb-2">Nom</label>
                 <input
+                  id="nom"
                   type="text"
                   value={form.nom}
                   onChange={(e) => updateField("nom", e.target.value)}
@@ -92,8 +94,9 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-2">Prénom</label>
+                <label htmlFor="prenom" className="block text-sm font-semibold text-gray-600 mb-2">Prénom</label>
                 <input
+                  id="prenom"
                   type="text"
                   value={form.prenom}
                   onChange={(e) => updateField("prenom", e.target.value)}
@@ -105,8 +108,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Téléphone</label>
+              <label htmlFor="telephone" className="block text-sm font-semibold text-gray-600 mb-2">Téléphone</label>
               <input
+                id="telephone"
                 type="tel"
                 value={form.telephone}
                 onChange={(e) => updateField("telephone", e.target.value)}
@@ -117,8 +121,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Email</label>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-600 mb-2">Email</label>
               <input
+                id="email"
                 type="email"
                 value={form.email}
                 onChange={(e) => updateField("email", e.target.value)}
@@ -129,8 +134,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">Mot de passe</label>
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-600 mb-2">Mot de passe</label>
               <input
+                id="password"
                 type="password"
                 value={form.password}
                 onChange={(e) => updateField("password", e.target.value)}
@@ -141,10 +147,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-2">
+              <label htmlFor="password_confirmation" className="block text-sm font-semibold text-gray-600 mb-2">
                 Confirmer le mot de passe
               </label>
               <input
+                id="password_confirmation"
                 type="password"
                 value={form.password_confirmation}
                 onChange={(e) => updateField("password_confirmation", e.target.value)}

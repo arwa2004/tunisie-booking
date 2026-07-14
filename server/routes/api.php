@@ -1,13 +1,19 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DestinationController;
 use App\Http\Controllers\Api\HotelController;
 use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VoyageController;
+use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\ChambreController;
+use App\Http\Controllers\Api\PensionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,24 +21,29 @@ use App\Http\Controllers\Api\PasswordResetController;
 |--------------------------------------------------------------------------
 */
 
-
-Route::post('/register', [AuthController::class, 'register'])
+Route::post('/register', [RegisteredUserController::class, 'store'])
     ->middleware('throttle:3,1'); // 3 tentatives / minute
 
-Route::post('/login', [AuthController::class, 'login'])
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])
     ->middleware('throttle:5,1'); // 5 tentatives / minute
 
-Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
     ->middleware('throttle:3,1');
 
-Route::post('/reset-password', [PasswordResetController::class, 'reset'])
+Route::post('/reset-password', [NewPasswordController::class, 'store'])
     ->middleware('throttle:3,1');
+
+Route::post('/auth/social', [SocialAuthController::class, 'handleSocialLogin']);
 
 Route::get('/destinations', [DestinationController::class, 'index']);
 Route::get('/destinations/{destination}', [DestinationController::class, 'show']);
 
 Route::get('/hotels', [HotelController::class, 'index']);
 Route::get('/hotels/{hotel}', [HotelController::class, 'show']);
+
+Route::get('/pensions', [PensionController::class, 'index']);
+Route::get('/hotels/{hotel}/chambres', [ChambreController::class, 'index']);
+Route::get('/chambres/{chambre}', [ChambreController::class, 'show']);
 
 Route::get('/voyages', [VoyageController::class, 'index']);
 Route::get('/voyages/{voyage}', [VoyageController::class, 'show']);
@@ -49,7 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/me/password', [AuthController::class, 'updatePassword']);
     Route::post('/me/photo', [AuthController::class, 'updatePhoto']); // <-- AJOUTER CETTE LIGNE
 
-    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
     Route::post('/reservations', [ReservationController::class, 'store']);
     Route::get('/mes-reservations', [ReservationController::class, 'mesReservations']);
@@ -71,6 +82,15 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/hotels', [HotelController::class, 'store']);
     Route::post('/hotels/{hotel}', [HotelController::class, 'update']);
     Route::delete('/hotels/{hotel}', [HotelController::class, 'destroy']);
+
+    Route::post('/hotels/{hotel}/chambres', [ChambreController::class, 'store']);
+    Route::post('/chambres/{chambre}', [ChambreController::class, 'update']); // POST + _method=PUT
+    Route::delete('/chambres/{chambre}', [ChambreController::class, 'destroy']);
+    Route::post('/chambres/{chambre}/pensions', [ChambreController::class, 'syncPensions']);
+
+    Route::post('/pensions', [PensionController::class, 'store']);
+    Route::post('/pensions/{pension}', [PensionController::class, 'update']);
+    Route::delete('/pensions/{pension}', [PensionController::class, 'destroy']);
 
     // Voyages
     Route::post('/voyages', [VoyageController::class, 'store']);
