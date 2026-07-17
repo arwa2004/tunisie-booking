@@ -191,6 +191,12 @@ class Hotel extends Model
         return $this->hasMany(HotelPhoto::class)->orderBy('ordre');
     }
 
+    /** Un hôtel peut avoir plusieurs avis clients */
+    public function avis()
+    {
+        return $this->hasMany(Avis::class);
+    }
+
     // ── Méthodes métier ───────────────────────────────────────────────────
 
     /**

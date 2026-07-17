@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ChambreController;
 use App\Http\Controllers\Api\PensionController;
+use App\Http\Controllers\Api\AvisController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +49,9 @@ Route::get('/chambres/{chambre}', [ChambreController::class, 'show']);
 Route::get('/voyages', [VoyageController::class, 'index']);
 Route::get('/voyages/{voyage}', [VoyageController::class, 'show']);
 
+// Avis (publics en lecture)
+Route::get('/hotels/{hotel}/avis', [AvisController::class, 'index']);
+
 /*
 |--------------------------------------------------------------------------
 | Routes authentifiées (n'importe quel utilisateur connecté)
@@ -64,6 +68,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/reservations', [ReservationController::class, 'store']);
     Route::get('/mes-reservations', [ReservationController::class, 'mesReservations']);
+
+    // Avis (création/suppression pour utilisateurs connectés)
+    Route::post('/hotels/{hotel}/avis', [AvisController::class, 'store']);
+    Route::delete('/avis/{avis}', [AvisController::class, 'destroy']);
 });
 
 /*

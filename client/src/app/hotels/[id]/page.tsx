@@ -7,14 +7,17 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace("/api", "")
+  : "http://127.0.0.1:8000";
+
+// ── Types ──────────────────────────────────────────────────────────────────
 
 interface Pension {
   id: number;
   nom: string;
   pivot: { supplement_prix: number };
 }
-
 interface Chambre {
   id: number;
   type: string;
@@ -25,20 +28,17 @@ interface Chambre {
   quantite: number;
   pensions: Pension[];
 }
-
 interface ServiceHotel {
   id: number;
   nom: string;
   icone: string;
 }
-
 interface Photo {
   id: number;
   url: string;
   alt_text: string | null;
   ordre: number;
 }
-
 interface Hotel {
   id: number;
   nom: string;
@@ -47,16 +47,50 @@ interface Hotel {
   description: string | null;
   image: string | null;
   disponible: boolean;
-  destination: { id: number; nom: string } | null;
+  destination: { id: number; nom: string; adresse?: string } | null;
   chambres: Chambre[];
   services: ServiceHotel[];
   photos: Photo[];
 }
-
 interface Room {
   adults: number;
   childrenAges: number[];
 }
+interface AvisUser {
+  id: number;
+  nom: string;
+  prenom: string;
+}
+interface AvisItem {
+  id: number;
+  user_id: number;
+  note_globale: number;
+  note_qualite_prix: number | null;
+  note_chambres: number | null;
+  note_emplacement: number | null;
+  note_proprete: number | null;
+  note_services: number | null;
+  note_equipements: number | null;
+  commentaire: string | null;
+  created_at: string;
+  user: AvisUser;
+}
+interface AvisData {
+  count: number;
+  pct_recommande: number;
+  moyennes: {
+    globale: number;
+    qualite_prix: number;
+    chambres: number;
+    emplacement: number;
+    proprete: number;
+    services: number;
+    equipements: number;
+  } | null;
+  avis: AvisItem[];
+}
+
+// ── Composant principal ────────────────────────────────────────────────────
 
 export default function HotelDetailPage() {
   const params = useParams();
@@ -71,139 +105,91 @@ export default function HotelDetailPage() {
   };
 
   const initArriveeStr = searchParams.get("arrivee");
-  const initDepartStr = searchParams.get("depart");
-  const initArrivee = initArriveeStr ? new Date(initArriveeStr) : new Date();
-  const initDepart = initDepartStr ? new Date(initDepartStr) : getNextDate(2);
-  const initAdultes = parseInt(searchParams.get("adultes") || "2", 10) || 2;
-  const initEnfants = parseInt(searchParams.get("enfants") || "0", 10) || 0;
-  const initChambres = parseInt(searchParams.get("chambres") || "1", 10) || 1;
+  const initDepartStr  = searchParams.get("depart");
+  const initArrivee    = initArriveeStr ? new Date(initArriveeStr) : new Date();
+  const initDepart     = initDepartStr  ? new Date(initDepartStr)  : getNextDate(2);
+  const initAdultes    = parseInt(searchParams.get("adultes")  || "2", 10) || 2;
+  const initEnfants    = parseInt(searchParams.get("enfants")  || "0", 10) || 0;
+  const initChambres   = parseInt(searchParams.get("chambres") || "1", 10) || 1;
 
-  const [hotel, setHotel] = useState<Hotel | null>(null);
-  const [loading, setLoading] = useState(true);
+  // ── State ───────────────────────────────────────────────────────────────
+  const [hotel,      setHotel]      = useState<Hotel | null>(null);
+  const [loading,    setLoading]    = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [success,    setSuccess]    = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
 
-  // Carrousel photos
-  const [currentPhoto, setCurrentPhoto] = useState(0);
-
-  // Pension sélectionnée par chambre (chambre_id -> pension_id)
+  const [currentPhoto,   setCurrentPhoto]   = useState(0);
+  const [activeTab,      setActiveTab]      = useState<"photos"|"presentation"|"equipements"|"avis">("photos");
   const [selectedPensions, setSelectedPensions] = useState<Record<string, number>>({});
 
-  const buildRoomsFromTotals = (totalRooms: number, totalAdults: number, totalEnfants: number): Room[] => {
-    const list: Room[] = [];
-    for (let i = 0; i < totalRooms; i++) {
-      list.push({ adults: 1, childrenAges: [] });
-    }
-    let remainingAdults = totalAdults - totalRooms;
-    let idx = 0;
-    while (remainingAdults > 0 && list.length > 0) {
-      list[idx].adults = Math.min(4, list[idx].adults + 1);
-      remainingAdults--;
-      idx = (idx + 1) % list.length;
-    }
-    let remainingEnfants = totalEnfants;
-    idx = 0;
-    while (remainingEnfants > 0 && list.length > 0) {
-      if (list[idx].childrenAges.length < 3) {
-        list[idx].childrenAges.push(8);
-        remainingEnfants--;
-      }
-      idx = (idx + 1) % list.length;
-    }
-    return list.length > 0 ? list : [{ adults: 2, childrenAges: [] }];
-  };
+  // Avis
+  const [avisData,       setAvisData]       = useState<AvisData | null>(null);
+  const [avisLoading,    setAvisLoading]    = useState(false);
+  const [showAvisForm,   setShowAvisForm]   = useState(false);
+  const [avisForm,       setAvisForm]       = useState({
+    note_globale:      7,
+    note_qualite_prix: 7,
+    note_chambres:     7,
+    note_emplacement:  7,
+    note_proprete:     7,
+    commentaire:       "",
+  });
+  const [avisSubmitting, setAvisSubmitting] = useState(false);
+  const [avisError,      setAvisError]      = useState<string | null>(null);
 
-  // ── BARRE DE RECHERCHE ──────────────────────────────────────────
-  const [searchArrivee, setSearchArrivee] = useState<Date | null>(initArrivee);
-  const [searchDepart, setSearchDepart] = useState<Date | null>(initDepart);
-  const [showGuestPicker, setShowGuestPicker] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Search bar
+  const [searchArrivee,    setSearchArrivee]    = useState<Date | null>(initArrivee);
+  const [searchDepart,     setSearchDepart]     = useState<Date | null>(initDepart);
+  const [showGuestPicker,  setShowGuestPicker]  = useState(false);
+  const [showDatePicker,   setShowDatePicker]   = useState(false);
   const [rooms, setRooms] = useState<Room[]>(() =>
     buildRoomsFromTotals(initChambres, initAdultes, initEnfants)
   );
-
-  const searchAdultes    = rooms.reduce((s, r) => s + r.adults, 0);
-  const searchEnfants    = rooms.reduce((s, r) => s + r.childrenAges.length, 0);
-  const searchChambres   = rooms.length;
-
   const [selectedChambres, setSelectedChambres] = useState<Record<number, string>>({});
 
-  const voyRef = useRef<HTMLDivElement>(null);
+  const voyRef  = useRef<HTMLDivElement>(null);
   const dateRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (voyRef.current && !voyRef.current.contains(e.target as Node)) {
-        setShowGuestPicker(false);
-      }
-      if (dateRef.current && !dateRef.current.contains(e.target as Node)) {
-        setShowDatePicker(false);
-      }
+  // Section refs for scroll-to-tab
+  const photosRef       = useRef<HTMLDivElement>(null);
+  const presRef         = useRef<HTMLDivElement>(null);
+  const equipRef        = useRef<HTMLDivElement>(null);
+  const avisRef         = useRef<HTMLDivElement>(null);
+  const chambresRef     = useRef<HTMLDivElement>(null);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  function buildRoomsFromTotals(totalRooms: number, totalAdults: number, totalEnfants: number): Room[] {
+    const list: Room[] = [];
+    for (let i = 0; i < totalRooms; i++) list.push({ adults: 1, childrenAges: [] });
+    let rem = totalAdults - totalRooms, idx = 0;
+    while (rem > 0 && list.length) {
+      list[idx].adults = Math.min(4, list[idx].adults + 1);
+      rem--;
+      idx = (idx + 1) % list.length;
     }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const addRoom = () => {
-    if (rooms.length < 5) {
-      setRooms([...rooms, { adults: 2, childrenAges: [] }]);
+    let remE = totalEnfants; idx = 0;
+    while (remE > 0 && list.length) {
+      if (list[idx].childrenAges.length < 3) { list[idx].childrenAges.push(8); remE--; }
+      idx = (idx + 1) % list.length;
     }
-  };
+    return list.length > 0 ? list : [{ adults: 2, childrenAges: [] }];
+  }
 
-  const removeRoom = (i: number) => {
-    if (rooms.length > 1) {
-      setRooms(rooms.filter((_, idx) => idx !== i));
-    }
-  };
-
-  const updateAdults = (idx: number, delta: number) => {
-    setRooms(rooms.map((r, i) => i === idx ? { ...r, adults: Math.max(1, Math.min(4, r.adults + delta)) } : r));
-  };
-
-  const addChild = (idx: number) => {
-    setRooms(rooms.map((r, i) => i === idx && r.childrenAges.length < 3 ? { ...r, childrenAges: [...r.childrenAges, 8] } : r));
-  };
-
-  const removeChild = (idx: number) => {
-    setRooms(rooms.map((r, i) => i === idx && r.childrenAges.length > 0 ? { ...r, childrenAges: r.childrenAges.slice(0, -1) } : r));
-  };
-
-  const setChildAge = (roomIdx: number, childIdx: number, age: number) => {
-    setRooms(rooms.map((r, i) => {
-      if (i !== roomIdx) return r;
-      const ages = [...r.childrenAges];
-      ages[childIdx] = age;
-      return { ...r, childrenAges: ages };
-    }));
-  };
-
-  useEffect(() => {
-    fetch(`${API}/hotels/${id}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setHotel(data);
-        setLoading(false);
-      });
-  }, [id]);
-
-  const nbNuits = () => {
-    if (!searchArrivee || !searchDepart) return 0;
-    const diff = searchDepart.getTime() - searchArrivee.getTime();
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-  };
+  const searchAdultes  = rooms.reduce((s, r) => s + r.adults, 0);
+  const searchEnfants  = rooms.reduce((s, r) => s + r.childrenAges.length, 0);
+  const searchChambresCount = rooms.length;
 
   const formatDate = (date: Date | null) => {
     if (!date) return "";
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${String(date.getDate()).padStart(2,"0")}/${String(date.getMonth()+1).padStart(2,"0")}/${date.getFullYear()}`;
   };
+  const toYMD = (date: Date | null) => date ? date.toISOString().split("T")[0] : "";
 
-  const toYMD = (date: Date | null) => {
-    if (!date) return "";
-    return date.toISOString().split("T")[0];
+  const nbNuits = () => {
+    if (!searchArrivee || !searchDepart) return 0;
+    return Math.max(0, Math.floor((searchDepart.getTime() - searchArrivee.getTime()) / 86400000));
   };
 
   const getImageUrl = (image: string | null) => {
@@ -212,10 +198,52 @@ export default function HotelDetailPage() {
     return `${BASE_URL}${image}`;
   };
 
+  const noteColor = (n: number) => n >= 8 ? "bg-green-500" : n >= 6 ? "bg-[#14b8a6]" : "bg-orange-400";
+  const noteLabel = (n: number) => n >= 8 ? "Excellent" : n >= 7 ? "Très bien" : n >= 6 ? "Bien" : "Correct";
+
+  // ── Close pickers on outside click ──────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (voyRef.current  && !voyRef.current.contains(e.target as Node))  setShowGuestPicker(false);
+      if (dateRef.current && !dateRef.current.contains(e.target as Node)) setShowDatePicker(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ── Room management ──────────────────────────────────────────────────────
+  const addRoom        = () => rooms.length < 5 && setRooms([...rooms, { adults: 2, childrenAges: [] }]);
+  const removeRoom     = (i: number) => rooms.length > 1 && setRooms(rooms.filter((_, idx) => idx !== i));
+  const updateAdults   = (idx: number, d: number) =>
+    setRooms(rooms.map((r, i) => i === idx ? { ...r, adults: Math.max(1, Math.min(4, r.adults + d)) } : r));
+  const addChild       = (idx: number) =>
+    setRooms(rooms.map((r, i) => i === idx && r.childrenAges.length < 3 ? { ...r, childrenAges: [...r.childrenAges, 8] } : r));
+  const removeChild    = (idx: number) =>
+    setRooms(rooms.map((r, i) => i === idx && r.childrenAges.length > 0 ? { ...r, childrenAges: r.childrenAges.slice(0,-1) } : r));
+  const setChildAge    = (rIdx: number, cIdx: number, age: number) =>
+    setRooms(rooms.map((r, i) => { if (i !== rIdx) return r; const a=[...r.childrenAges]; a[cIdx]=age; return {...r,childrenAges:a}; }));
+
+  // ── Fetch hotel ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetch(`${API}/hotels/${id}`)
+      .then(r => r.json())
+      .then(data => { setHotel(data); setLoading(false); });
+  }, [id]);
+
+  // ── Fetch avis ───────────────────────────────────────────────────────────
+  const fetchAvis = () => {
+    setAvisLoading(true);
+    fetch(`${API}/hotels/${id}/avis`)
+      .then(r => r.json())
+      .then(data => { setAvisData(data); setAvisLoading(false); });
+  };
+  useEffect(() => { fetchAvis(); }, [id]);
+
+  // ── Room <-> chambre selection sync ─────────────────────────────────────
   const getChambresForRoom = (room: Room): Chambre[] => {
     if (!hotel?.chambres) return [];
-    return hotel.chambres.filter(
-      c => c.capacite_adultes === room.adults && c.capacite_enfants >= room.childrenAges.length
+    return hotel.chambres.filter(c =>
+      c.capacite_adultes === room.adults && c.capacite_enfants >= room.childrenAges.length
     );
   };
 
@@ -224,200 +252,191 @@ export default function HotelDetailPage() {
     setSelectedChambres(prev => {
       const next: Record<number, string> = {};
       rooms.forEach((room, idx) => {
-        const options = getChambresForRoom(room);
-        const previousChoice = prev[idx];
-        if (previousChoice && options.some(c => String(c.id) === previousChoice)) {
-          next[idx] = previousChoice;
-        } else {
-          next[idx] = options[0] ? String(options[0].id) : "";
-        }
+        const opts = getChambresForRoom(room);
+        const prev_choice = prev[idx];
+        next[idx] = (prev_choice && opts.some(c => String(c.id) === prev_choice))
+          ? prev_choice
+          : (opts[0] ? String(opts[0].id) : "");
       });
       return next;
     });
   }, [hotel, rooms]);
 
+  // ── Pricing ──────────────────────────────────────────────────────────────
   const calculateChambreTotal = (chambre: Chambre, room: Room) => {
-    const pensionKey = `${chambre.id}`;
-    const pensionId = selectedPensions[pensionKey] || (chambre.pensions && chambre.pensions[0]?.id);
-    let supplementPension = 0;
-    if (pensionId && chambre.pensions) {
-      const pension = chambre.pensions.find(p => p.id === pensionId);
-      if (pension) supplementPension = pension.pivot.supplement_prix;
-    }
-
-    let supplementEnfants = 0;
-    room.childrenAges.forEach((age) => {
-      if (age < 2) supplementEnfants += 0;
-      else if (age < 12) supplementEnfants += 30;
-      else supplementEnfants += 50;
-    });
-
-    const nights = Math.max(1, nbNuits());
-    return (chambre.prix_base_nuit + supplementPension + supplementEnfants) * nights;
+    const pensionId = selectedPensions[`${chambre.id}`] || chambre.pensions?.[0]?.id;
+    const supPension = chambre.pensions?.find(p => p.id === pensionId)?.pivot.supplement_prix ?? 0;
+    const supEnfants = room.childrenAges.reduce((s, age) =>
+      s + (age < 2 ? 0 : age < 12 ? 30 : 50), 0);
+    return (chambre.prix_base_nuit + supPension + supEnfants) * Math.max(1, nbNuits());
   };
 
   const grandTotal = useMemo(() => {
     if (!hotel) return 0;
     return rooms.reduce((sum, room, idx) => {
-      const chambreId = selectedChambres[idx];
-      const chambre = hotel.chambres.find(c => String(c.id) === chambreId);
-      if (!chambre) return sum;
-      return sum + calculateChambreTotal(chambre, room);
+      const ch = hotel.chambres.find(c => String(c.id) === selectedChambres[idx]);
+      return ch ? sum + calculateChambreTotal(ch, room) : sum;
     }, 0);
   }, [hotel, rooms, selectedChambres, selectedPensions, searchArrivee, searchDepart]);
 
   const allRoomsHaveSelection = rooms.every((_, idx) => !!selectedChambres[idx]);
-
   const originalTotal = Math.round(grandTotal * 1.25);
   const discountTotal = originalTotal - grandTotal;
   const depositAmount = Math.round(grandTotal * 0.15);
 
+  // ── Submit reservation ────────────────────────────────────────────────────
   const handleReservationClick = async (paymentType: "agence" | "deposit") => {
     setError(null);
     const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
+    if (!token) { router.push("/login"); return; }
     if (!hotel || !allRoomsHaveSelection) {
-      setError("Veuillez sélectionner un type de chambre pour chaque chambre demandée.");
-      return;
+      setError("Veuillez sélectionner un type de chambre pour chaque chambre demandée."); return;
     }
-
     setSubmitting(true);
-
     try {
       const requests = rooms.map((room, idx) => {
         const chambreId = selectedChambres[idx];
-        const chambre = hotel.chambres.find(c => String(c.id) === chambreId);
-        const pensionId = selectedPensions[chambreId] || (chambre?.pensions && chambre.pensions[0]?.id) || null;
-
+        const chambre   = hotel.chambres.find(c => String(c.id) === chambreId);
+        const pensionId = selectedPensions[chambreId] || chambre?.pensions?.[0]?.id || null;
         return fetch(`${API}/reservations`, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({
-            hotel_id: id,
-            chambre_id: chambreId,
-            pension_id: pensionId,
-            date_arrivee: toYMD(searchArrivee),
-            date_depart: toYMD(searchDepart),
-            nb_chambres: 1,
-            nb_adultes: room.adults,
-            nb_enfants: room.childrenAges.length,
-            ages_enfants: room.childrenAges,
+            hotel_id: id, chambre_id: chambreId, pension_id: pensionId,
+            date_arrivee: toYMD(searchArrivee), date_depart: toYMD(searchDepart),
+            nb_chambres: 1, nb_adultes: room.adults,
+            nb_enfants: room.childrenAges.length, ages_enfants: room.childrenAges,
             type_paiement: paymentType,
           }),
         });
       });
-
       const responses = await Promise.all(requests);
-
       if (responses.some(r => r.status === 401)) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.dispatchEvent(new Event("auth-change"));
-        router.push("/login");
-        return;
+        localStorage.removeItem("token"); localStorage.removeItem("user");
+        window.dispatchEvent(new Event("auth-change")); router.push("/login"); return;
       }
-
       const results = await Promise.all(responses.map(r => r.json().catch(() => ({}))));
-      const hasFailure = responses.some(r => !r.ok);
-
-      if (hasFailure) {
-        const firstMessage = results.find((r: any) => r?.message)?.message
-          || "Erreur lors de la réservation d'une ou plusieurs chambres.";
-        setError(firstMessage);
-        return;
+      if (responses.some(r => !r.ok)) {
+        setError(results.find((r: any) => r?.message)?.message || "Erreur lors de la réservation."); return;
       }
-
       setSuccess(true);
-    } catch {
-      setError("Erreur de connexion au serveur.");
-    } finally {
-      setSubmitting(false);
-    }
+    } catch { setError("Erreur de connexion au serveur."); }
+    finally { setSubmitting(false); }
   };
 
+  // ── Submit avis ───────────────────────────────────────────────────────────
+  const handleAvisSubmit = async () => {
+    setAvisError(null);
+    const token = localStorage.getItem("token");
+    if (!token) { router.push("/login"); return; }
+    setAvisSubmitting(true);
+    try {
+      const res = await fetch(`${API}/hotels/${id}/avis`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(avisForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setAvisError(data?.message || "Erreur lors de l'envoi de l'avis.");
+        return;
+      }
+      setShowAvisForm(false);
+      fetchAvis(); // refresh avis data
+    } catch { setAvisError("Erreur de connexion."); }
+    finally { setAvisSubmitting(false); }
+  };
+
+  // ── Tab scroll ────────────────────────────────────────────────────────────
+  const scrollToTab = (tab: "photos"|"presentation"|"equipements"|"avis") => {
+    setActiveTab(tab);
+    const refs: Record<string, React.RefObject<HTMLDivElement | null>> = {
+      photos: photosRef, presentation: presRef, equipements: equipRef, avis: avisRef,
+    };
+    refs[tab]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // ── Loading / Not found ───────────────────────────────────────────────────
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center text-gray-400">Chargement...</div>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin w-10 h-10 border-4 border-[#e91e8c] border-t-transparent rounded-full"/>
+    </div>
   );
   if (!hotel) return (
     <div className="min-h-screen flex items-center justify-center text-gray-400">Hôtel introuvable.</div>
   );
 
-  const renderStars = (count: number) => (
-    <span className="text-yellow-400 text-sm tracking-wide">
-      {"★".repeat(count)}{"☆".repeat(5 - count)}
-    </span>
-  );
-
-  // Styles spécifiques pour le react-datepicker
-  const datePickerCustomStyles = `
-    .react-datepicker { border: none !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important; border-radius: 12px !important; font-family: inherit !important; }
-    .react-datepicker__header { background: white !important; border-bottom: none !important; padding-top: 15px !important; }
-    .react-datepicker__current-month { font-weight: 700 !important; color: #1a1a2e !important; }
-    .react-datepicker__day-name { color: #9ca3af !important; font-weight: 600 !important; }
-    .react-datepicker__day--selected, .react-datepicker__day--in-selecting-range, .react-datepicker__day--in-range { background-color: #e91e8c !important; color: white !important; border-radius: 8px !important; }
-    .react-datepicker__day--keyboard-selected { background-color: #fbcfe8 !important; color: #e91e8c !important; }
-    .react-datepicker__day:hover { background-color: #fce7f3 !important; border-radius: 8px !important; }
+  // ── DatePicker styles ─────────────────────────────────────────────────────
+  const dpStyles = `
+    .react-datepicker{border:none!important;box-shadow:0 20px 60px -10px rgba(0,0,0,.15)!important;border-radius:16px!important;font-family:inherit!important;overflow:hidden}
+    .react-datepicker__header{background:white!important;border-bottom:1px solid #f3f4f6!important;padding:16px!important}
+    .react-datepicker__current-month{font-weight:700!important;color:#1a1a2e!important;font-size:15px!important}
+    .react-datepicker__day-name{color:#9ca3af!important;font-weight:600!important;font-size:12px!important}
+    .react-datepicker__day--selected,.react-datepicker__day--in-range{background-color:#e91e8c!important;color:white!important;border-radius:8px!important;font-weight:700!important}
+    .react-datepicker__day--in-selecting-range{background-color:#fce7f3!important;color:#e91e8c!important;border-radius:8px!important}
+    .react-datepicker__day--range-start,.react-datepicker__day--range-end{background-color:#e91e8c!important;color:white!important;border-radius:8px!important}
+    .react-datepicker__day:hover{background-color:#fce7f3!important;color:#e91e8c!important;border-radius:8px!important}
+    .react-datepicker__day--outside-month{color:#d1d5db!important}
+    .react-datepicker__navigation-icon::before{border-color:#9ca3af!important}
   `;
+
+  const m = avisData?.moyennes;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <style>{datePickerCustomStyles}</style>
+      <style>{dpStyles}</style>
 
-      {/* ── HEADER ── */}
-      <div className="bg-white border-b border-gray-200 pt-5">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+      {/* ── HEADER avec ONGLETS ─────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-6 pt-5">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-[#1a1a2e] flex items-center gap-3">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-[#1a1a2e] flex items-center gap-3 flex-wrap">
                 {hotel.nom}
-                <span className="text-yellow-400 text-lg">{"★".repeat(hotel.etoiles)}</span>
+                <span className="text-yellow-400 text-lg">{"★".repeat(hotel.etoiles)}{"☆".repeat(5-hotel.etoiles)}</span>
               </h1>
               {hotel.destination && (
                 <p className="text-gray-500 text-sm mt-1 flex items-center gap-1">
-                  📍 {hotel.destination.nom}
+                  📍 {hotel.destination.adresse || hotel.destination.nom}
                 </p>
               )}
             </div>
-            
-            {/* Bouton retour caché sur mobile pour faire place nette, ou juste un petit lien */}
             <Link
               href={hotel.destination ? `/destinations/${hotel.destination.id}` : "/destinations"}
-              className="hidden md:inline-block text-sm text-[#e91e8c] hover:underline font-medium whitespace-nowrap"
+              className="text-sm text-[#e91e8c] hover:underline font-medium whitespace-nowrap hidden md:block"
             >
               ← Retour
             </Link>
           </div>
 
-          {/* Onglets (Tabs) */}
-          <div className="flex gap-6 mt-6 overflow-x-auto">
-            <button className="pb-3 border-b-2 border-[#e91e8c] text-[#e91e8c] font-bold text-sm whitespace-nowrap">Photos</button>
-            <button className="pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-semibold text-sm whitespace-nowrap">Présentation</button>
-            <button className="pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-semibold text-sm whitespace-nowrap">Équipements</button>
-            <button className="pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-semibold text-sm whitespace-nowrap">Avis</button>
+          {/* Onglets */}
+          <div className="flex gap-0 mt-6 overflow-x-auto border-b border-gray-100 -mb-px">
+            {(["photos","presentation","equipements","avis"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => scrollToTab(tab)}
+                className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tab
+                    ? "border-[#e91e8c] text-[#e91e8c]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab === "photos" ? "Photos" : tab === "presentation" ? "Présentation" : tab === "equipements" ? "Équipements" : `Avis${avisData?.count ? ` (${avisData.count})` : ""}`}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
+      {/* ── CORPS DE PAGE ──────────────────────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* ── GRILLE 2 COLONNES ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Colonne de gauche (Principale) */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* ── CARROUSEL ── */}
-            <div className="relative w-full h-[350px] md:h-[450px] rounded-2xl overflow-hidden shadow-sm">
-              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold text-green-600 z-10 flex items-center gap-2">
-                <span>🧒</span> 1er enfant - 4 ans Gratuit
-              </div>
+
+          {/* ── COLONNE PRINCIPALE ──────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-8">
+
+            {/* CARROUSEL */}
+            <div ref={photosRef} className="relative w-full h-[320px] md:h-[420px] rounded-2xl overflow-hidden shadow-sm scroll-mt-24">
               {hotel.photos && hotel.photos.length > 0 ? (
                 <>
                   <img
@@ -428,141 +447,336 @@ export default function HotelDetailPage() {
                   {hotel.photos.length > 1 && (
                     <>
                       <button
-                        onClick={() => setCurrentPhoto(prev => prev === 0 ? hotel.photos.length - 1 : prev - 1)}
+                        onClick={() => setCurrentPhoto(p => p === 0 ? hotel.photos.length-1 : p-1)}
                         className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition"
-                      >
-                        ◀
-                      </button>
+                      >◀</button>
                       <button
-                        onClick={() => setCurrentPhoto(prev => prev === hotel.photos.length - 1 ? 0 : prev + 1)}
+                        onClick={() => setCurrentPhoto(p => p === hotel.photos.length-1 ? 0 : p+1)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition"
-                      >
-                        ▶
-                      </button>
+                      >▶</button>
+                      <div className="absolute bottom-3 right-4 bg-black/50 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                        {currentPhoto+1}/{hotel.photos.length}
+                      </div>
                     </>
+                  )}
+                  {/* Miniatures */}
+                  {hotel.photos.length > 1 && (
+                    <div className="absolute bottom-3 left-3 flex gap-1.5">
+                      {hotel.photos.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPhoto(i)}
+                          className={`w-2.5 h-2.5 rounded-full transition-all ${i === currentPhoto ? "bg-white scale-125" : "bg-white/50"}`}
+                        />
+                      ))}
+                    </div>
                   )}
                 </>
               ) : (
-                <img
-                  src={getImageUrl(hotel.image)}
-                  alt={hotel.nom}
-                  className="w-full h-full object-cover"
-                />
+                <img src={getImageUrl(hotel.image)} alt={hotel.nom} className="w-full h-full object-cover"/>
               )}
             </div>
 
-            {/* Services Rapides */}
+            {/* SERVICES RAPIDES */}
             {hotel.services && hotel.services.length > 0 && (
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-700 py-2">
-                <span className="font-bold text-gray-900">Principaux Services :</span>
-                {hotel.services.slice(0, 3).map((service) => (
-                  <div key={service.id} className="flex items-center gap-1.5">
-                    <span>{service.icone}</span>
-                    <span>{service.nom}</span>
-                  </div>
-                ))}
-                <span className="text-[#e91e8c] font-medium cursor-pointer hover:underline text-xs">Voir tous les services ›</span>
+              <div ref={equipRef} className="scroll-mt-24">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Principaux Services</p>
+                <div className="flex flex-wrap gap-4">
+                  {hotel.services.map((s) => (
+                    <div key={s.id} className="flex items-center gap-2 text-sm text-gray-700 bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm">
+                      <span>{s.icone}</span> <span className="font-medium">{s.nom}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="pt-4 border-t border-gray-200">
-               <h2 className="text-xl font-bold text-[#1a1a2e] mb-3">Présentation</h2>
-               <p className="text-gray-600 leading-relaxed text-sm">
-                 {hotel.description ?? "Aucune description disponible."}
-               </p>
+            {/* PRÉSENTATION */}
+            <div ref={presRef} className="scroll-mt-24 bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+              <h2 className="text-xl font-bold text-[#1a1a2e] mb-4">Présentation</h2>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                {hotel.description ?? "Aucune description disponible."}
+              </p>
             </div>
           </div>
 
-          {/* Colonne de droite (Sidebar Avis) */}
-          <div className="lg:col-span-1 space-y-6">
-             <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-lg font-bold text-[#1a1a2e] mb-4">Avis Voyageurs</h3>
-                
-                {/* Score global */}
-                <div className="flex items-start gap-4 mb-6">
-                   <div className="w-14 h-14 bg-[#14b8a6] rounded-xl flex items-center justify-center text-white text-xl font-extrabold shadow-sm">
-                     7.9
-                   </div>
-                   <div>
-                     <p className="text-lg font-bold text-[#1a1a2e]">Très bien</p>
-                     <p className="text-xs text-gray-500">Avis clients TunisieBooking</p>
-                   </div>
+          {/* ── SIDEBAR AVIS ─────────────────────────────────────────────── */}
+          <div className="lg:col-span-1 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 sticky top-24">
+              {avisLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin w-8 h-8 border-3 border-[#e91e8c] border-t-transparent rounded-full"/>
                 </div>
+              ) : avisData && avisData.count > 0 && m ? (
+                <>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className={`w-14 h-14 ${noteColor(m.globale)} rounded-xl flex items-center justify-center text-white text-2xl font-extrabold shadow`}>
+                      {m.globale}
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-[#1a1a2e]">{noteLabel(m.globale)}</p>
+                      <p className="text-xs text-gray-400">{avisData.count} avis TunisieBooking</p>
+                    </div>
+                  </div>
 
-                {/* Citation mockée */}
-                <div className="bg-gray-50 p-4 rounded-xl text-sm italic text-gray-600 mb-6 relative">
-                  <span className="text-2xl text-gray-300 absolute -top-1 left-2">"</span>
-                  Accueil chaleureux, personnel très sympathique et très compétent, service excellent...
-                  <a href="#" className="block text-[#e91e8c] text-xs font-semibold mt-2 not-italic hover:underline">Lire tous les avis ›</a>
-                </div>
+                  {/* Dernier commentaire */}
+                  {avisData.avis[0]?.commentaire && (
+                    <div className="bg-gray-50 p-4 rounded-xl text-sm italic text-gray-600 mb-5 relative border border-gray-100">
+                      <span className="text-3xl text-gray-200 absolute -top-2 left-2 font-serif leading-none">"</span>
+                      <p className="mt-2 line-clamp-3">{avisData.avis[0].commentaire}</p>
+                      <span className="block text-xs text-gray-400 not-italic mt-2 font-semibold">
+                        — {avisData.avis[0].user.prenom} {avisData.avis[0].user.nom[0]}.
+                      </span>
+                    </div>
+                  )}
 
-                {/* Progress bars mockées */}
-                <div className="space-y-3 text-sm font-semibold text-gray-700">
-                   <div>
-                     <div className="flex justify-between mb-1"><span className="text-xs">Qualité/prix</span><span className="text-xs font-bold">7.1</span></div>
-                     <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="bg-[#14b8a6] h-1.5 rounded-full" style={{width: '71%'}}></div></div>
-                   </div>
-                   <div>
-                     <div className="flex justify-between mb-1"><span className="text-xs">Chambres</span><span className="text-xs font-bold">7.5</span></div>
-                     <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="bg-[#14b8a6] h-1.5 rounded-full" style={{width: '75%'}}></div></div>
-                   </div>
-                   <div>
-                     <div className="flex justify-between mb-1"><span className="text-xs">Emplacement</span><span className="text-xs font-bold">7.2</span></div>
-                     <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="bg-[#14b8a6] h-1.5 rounded-full" style={{width: '72%'}}></div></div>
-                   </div>
-                   <div>
-                     <div className="flex justify-between mb-1"><span className="text-xs">Propreté</span><span className="text-xs font-bold">8.2</span></div>
-                     <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="bg-[#14b8a6] h-1.5 rounded-full" style={{width: '82%'}}></div></div>
-                   </div>
-                </div>
+                  {/* Barres de score */}
+                  <div className="space-y-3">
+                    {[
+                      { label: "Qualité/prix",  val: m.qualite_prix },
+                      { label: "Chambres",       val: m.chambres },
+                      { label: "Emplacement",    val: m.emplacement },
+                      { label: "Propreté",       val: m.proprete },
+                    ].filter(x => x.val > 0).map(({ label, val }) => (
+                      <div key={label}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs text-gray-600 font-medium">{label}</span>
+                          <span className="text-xs font-bold text-[#1a1a2e]">{val}</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-1.5">
+                          <div className={`${noteColor(val)} h-1.5 rounded-full transition-all`} style={{ width: `${val * 10}%` }}/>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-600 font-medium">
-                  <span className="text-green-500">👍</span> Recommandé par 79% de nos clients
+                  <div className="mt-5 pt-4 border-t border-gray-100 text-xs text-gray-500 font-medium flex items-center gap-2">
+                    <span className="text-green-500 text-base">👍</span>
+                    Recommandé par {avisData.pct_recommande}% de nos clients
+                  </div>
+
+                  <button
+                    onClick={() => setShowAvisForm(v => !v)}
+                    className="mt-4 w-full py-2.5 text-sm font-bold text-[#e91e8c] border border-[#e91e8c] rounded-xl hover:bg-pink-50 transition"
+                  >
+                    {showAvisForm ? "Annuler" : "✍️ Laisser mon avis"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-bold text-[#1a1a2e] mb-2">Avis Voyageurs</h3>
+                  <p className="text-sm text-gray-400 mb-4">Aucun avis pour cet hôtel pour le moment. Soyez le premier !</p>
+                  <button
+                    onClick={() => setShowAvisForm(v => !v)}
+                    className="w-full py-2.5 text-sm font-bold text-white bg-[#e91e8c] rounded-xl hover:bg-[#d11a7e] transition shadow"
+                  >
+                    ✍️ Laisser le premier avis
+                  </button>
+                </>
+              )}
+
+              {/* Formulaire d'avis */}
+              {showAvisForm && (
+                <div className="mt-5 pt-5 border-t border-gray-100 space-y-4">
+                  <p className="font-bold text-sm text-[#1a1a2e]">Votre évaluation</p>
+
+                  <div>
+                    <label className="text-xs text-gray-500 font-semibold block mb-1">Note globale : <strong className="text-[#e91e8c]">{avisForm.note_globale}/10</strong></label>
+                    <input type="range" min={1} max={10} value={avisForm.note_globale}
+                      onChange={e => setAvisForm(f => ({...f, note_globale: +e.target.value}))}
+                      className="w-full accent-[#e91e8c]"/>
+                  </div>
+
+                  {[
+                    { key: "note_qualite_prix", label: "Qualité/prix" },
+                    { key: "note_chambres",     label: "Chambres" },
+                    { key: "note_emplacement",  label: "Emplacement" },
+                    { key: "note_proprete",     label: "Propreté" },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="text-xs text-gray-500 font-semibold block mb-1">
+                        {label} : <strong className="text-[#e91e8c]">{(avisForm as any)[key]}/10</strong>
+                      </label>
+                      <input type="range" min={1} max={10} value={(avisForm as any)[key]}
+                        onChange={e => setAvisForm(f => ({...f, [key]: +e.target.value}))}
+                        className="w-full accent-[#e91e8c]"/>
+                    </div>
+                  ))}
+
+                  <div>
+                    <label className="text-xs text-gray-500 font-semibold block mb-1">Commentaire (facultatif)</label>
+                    <textarea
+                      value={avisForm.commentaire}
+                      onChange={e => setAvisForm(f => ({...f, commentaire: e.target.value}))}
+                      rows={3}
+                      placeholder="Partagez votre expérience..."
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
+                    />
+                  </div>
+
+                  {avisError && <p className="text-red-500 text-xs">{avisError}</p>}
+
+                  <button
+                    onClick={handleAvisSubmit}
+                    disabled={avisSubmitting}
+                    className="w-full py-2.5 text-sm font-bold text-white bg-[#e91e8c] rounded-xl hover:bg-[#d11a7e] transition disabled:opacity-50 shadow"
+                  >
+                    {avisSubmitting ? "Envoi..." : "Publier mon avis"}
+                  </button>
                 </div>
-             </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════════════
-            🛏️ CHAMBRES DISPONIBLES — NOUVEAU DESIGN
-            ══════════════════════════════════════════════════════════════ */}
-        <div id="chambres-section" className="mt-12 space-y-6">
+        {/* ── SECTION AVIS (liste complète) ──────────────────────────────── */}
+        {avisData && avisData.count > 0 && (
+          <div ref={avisRef} className="mt-10 scroll-mt-24 bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 className="text-xl font-bold text-[#1a1a2e] mb-5">
+              Avis des voyageurs ({avisData.count})
+            </h2>
+            <div className="space-y-5">
+              {avisData.avis.map((avis) => (
+                <div key={avis.id} className="border-b border-gray-100 pb-5 last:border-none last:pb-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 rounded-full bg-[#e91e8c]/10 flex items-center justify-center font-bold text-[#e91e8c] text-sm">
+                      {avis.user.prenom[0]}{avis.user.nom[0]}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-[#1a1a2e]">{avis.user.prenom} {avis.user.nom}</p>
+                      <p className="text-xs text-gray-400">{new Date(avis.created_at).toLocaleDateString("fr-FR", { day:"numeric", month:"long", year:"numeric" })}</p>
+                    </div>
+                    <div className={`ml-auto w-10 h-10 ${noteColor(avis.note_globale)} rounded-xl flex items-center justify-center text-white text-sm font-extrabold`}>
+                      {avis.note_globale}
+                    </div>
+                  </div>
+                  {avis.commentaire && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{avis.commentaire}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── SECTION CHAMBRES DISPONIBLES ───────────────────────────────── */}
+        <div id="chambres-section" ref={chambresRef} className="mt-10 space-y-5">
           <h2 className="text-2xl font-bold text-[#1a1a2e]">Chambres disponibles</h2>
 
-          {/* Barre de filtre compacte */}
-          <div className="flex flex-col md:flex-row items-center gap-0 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden p-1 relative">
-            
-            {/* Dates */}
-            <div 
-              ref={dateRef}
-              className="flex-1 flex w-full relative group cursor-pointer hover:bg-gray-50 rounded-l-lg transition"
-              onClick={() => setShowDatePicker(!showDatePicker)}
-            >
-              <div className="flex-1 flex flex-col justify-center px-4 py-2 border-r border-gray-200 border-b md:border-b-0">
-                <span className="text-[10px] uppercase font-bold text-gray-400">Arrivée</span>
-                <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  📅 {formatDate(searchArrivee) || "Sélectionnez"}
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center px-4 py-2 border-r border-gray-200">
-                <span className="text-[10px] uppercase font-bold text-gray-400">Départ</span>
-                <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  📅 {formatDate(searchDepart) || "Sélectionnez"}
-                </span>
+          {/* Barre de filtre avec DatePicker intégré */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-visible">
+            <div className="flex flex-col md:flex-row" ref={dateRef}>
+
+              {/* Dates */}
+              <div
+                className="flex flex-1 border-b md:border-b-0 cursor-pointer"
+                onClick={() => setShowDatePicker(v => !v)}
+              >
+                <div className="flex-1 flex flex-col justify-center px-4 py-3 border-r border-gray-200 hover:bg-gray-50 transition">
+                  <span className="text-[10px] uppercase font-bold text-gray-400">📅 Arrivée</span>
+                  <span className="text-sm font-bold text-gray-900 mt-0.5">{formatDate(searchArrivee) || "Sélectionnez"}</span>
+                </div>
+                <div className="flex-1 flex flex-col justify-center px-4 py-3 border-r border-gray-200 hover:bg-gray-50 transition">
+                  <span className="text-[10px] uppercase font-bold text-gray-400">📅 Départ</span>
+                  <span className="text-sm font-bold text-gray-900 mt-0.5">{formatDate(searchDepart) || "Sélectionnez"}</span>
+                </div>
               </div>
 
-              {/* Popup Calendrier Double Mois */}
-              {showDatePicker && (
-                <div 
-                  className="absolute top-[calc(100%+10px)] left-0 z-50 bg-white p-2 rounded-2xl shadow-2xl border border-gray-100"
-                  onClick={e => e.stopPropagation()} // empêche de fermer au clic dedans
+              {/* Voyageurs */}
+              <div className="flex-1 relative border-b md:border-b-0" ref={voyRef}>
+                <div
+                  className="flex flex-col justify-center px-4 py-3 border-r border-gray-200 cursor-pointer hover:bg-gray-50 transition h-full"
+                  onClick={() => setShowGuestPicker(v => !v)}
                 >
+                  <span className="text-[10px] uppercase font-bold text-gray-400">🧑‍🤝‍🧑 Voyageurs</span>
+                  <span className="text-sm font-bold text-gray-900 mt-0.5">
+                    {searchChambresCount} Ch. · {searchAdultes} Ad. · {searchEnfants} Enf.
+                    <span className="text-gray-400 text-xs ml-1">{showGuestPicker ? "▲" : "▼"}</span>
+                  </span>
+                </div>
+
+                {showGuestPicker && (
+                  <div className="absolute top-[calc(100%+8px)] left-0 bg-white rounded-2xl shadow-2xl border border-gray-100 w-80 z-50">
+                    <div className="max-h-[360px] overflow-y-auto p-4 space-y-5">
+                      {rooms.map((room, rIdx) => (
+                        <div key={rIdx} className="border-b border-gray-100 pb-4 last:border-none last:pb-0">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="font-bold text-sm text-[#1a1a2e]">Chambre {rIdx+1}</span>
+                            {rooms.length > 1 && (
+                              <button onClick={() => removeRoom(rIdx)} className="text-xs text-[#e91e8c] hover:bg-pink-50 px-2 py-1 rounded transition">
+                                Supprimer
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex justify-between items-center text-sm mb-3">
+                            <span className="text-gray-700 font-medium">Adulte(s)</span>
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => updateAdults(rIdx,-1)} className="w-8 h-8 rounded-full border border-gray-200 hover:border-[#e91e8c] hover:text-[#e91e8c] flex items-center justify-center font-bold transition">−</button>
+                              <span className="font-bold w-5 text-center">{room.adults}</span>
+                              <button onClick={() => updateAdults(rIdx,1)} className="w-8 h-8 rounded-full border border-gray-200 hover:border-[#e91e8c] hover:text-[#e91e8c] flex items-center justify-center font-bold transition">+</button>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <div><span className="text-gray-700 font-medium">Enfant(s)</span><span className="text-gray-400 text-xs block">0 à 11 ans</span></div>
+                            <div className="flex items-center gap-3">
+                              <button onClick={() => removeChild(rIdx)} className="w-8 h-8 rounded-full border border-gray-200 hover:border-[#e91e8c] hover:text-[#e91e8c] flex items-center justify-center font-bold transition">−</button>
+                              <span className="font-bold w-5 text-center">{room.childrenAges.length}</span>
+                              <button onClick={() => addChild(rIdx)} className="w-8 h-8 rounded-full border border-gray-200 hover:border-[#e91e8c] hover:text-[#e91e8c] flex items-center justify-center font-bold transition">+</button>
+                            </div>
+                          </div>
+                          {room.childrenAges.length > 0 && (
+                            <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                              {room.childrenAges.map((age, cIdx) => (
+                                <div key={cIdx} className="flex justify-between items-center text-xs">
+                                  <span className="text-gray-500">Âge enfant {cIdx+1}</span>
+                                  <select value={age} onChange={e => setChildAge(rIdx, cIdx, +e.target.value)}
+                                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs font-semibold bg-white focus:outline-none focus:border-[#e91e8c]">
+                                    {Array.from({length:12},(_,k) => <option key={k} value={k}>{k === 0 ? "< 1 an" : `${k} an${k>1?"s":""}`}</option>)}
+                                  </select>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {rooms.length < 5 && (
+                      <button onClick={addRoom} className="w-full py-2.5 text-xs font-bold text-[#e91e8c] border-t border-gray-100 hover:bg-gray-50 transition">
+                        + Ajouter une chambre
+                      </button>
+                    )}
+                    <div className="p-3 border-t border-gray-100">
+                      <button onClick={() => setShowGuestPicker(false)}
+                        className="w-full py-2.5 text-sm font-bold text-white bg-[#e91e8c] rounded-xl hover:bg-[#d11a7e] transition shadow">
+                        Valider
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bouton Modifier */}
+              <div className="flex items-center px-3 py-2">
+                <button
+                  onClick={() => setShowDatePicker(v => !v)}
+                  className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-semibold px-5 py-2.5 rounded-lg text-sm transition whitespace-nowrap"
+                >
+                  ✏️ Modifier
+                </button>
+              </div>
+            </div>
+
+            {/* Popup DatePicker (2 mois) */}
+            {showDatePicker && (
+              <div className="border-t border-gray-100 p-4 bg-white rounded-b-xl">
+                <div className="flex justify-center overflow-x-auto">
                   <DatePicker
                     selected={searchArrivee}
                     onChange={(dates) => {
                       const [start, end] = dates;
                       setSearchArrivee(start);
                       setSearchDepart(end);
+                      if (start && end) setShowDatePicker(false);
                     }}
                     startDate={searchArrivee}
                     endDate={searchDepart}
@@ -570,212 +784,142 @@ export default function HotelDetailPage() {
                     monthsShown={2}
                     inline
                     minDate={new Date()}
+                    locale="fr"
                   />
-                  <div className="flex justify-end p-2">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setShowDatePicker(false); }}
-                      className="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-200"
-                    >
-                      Fermer
-                    </button>
-                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Voyageurs */}
-            <div className="flex-1 w-full relative" ref={voyRef}>
-              <div 
-                className="flex flex-col justify-center px-4 py-2 cursor-pointer hover:bg-gray-50 transition"
-                onClick={() => setShowGuestPicker(!showGuestPicker)}
-              >
-                <span className="text-[10px] uppercase font-bold text-gray-400">Voyageurs</span>
-                <span className="text-sm font-semibold text-gray-900 flex items-center justify-between">
-                  <span>🧑‍🤝‍🧑 {searchChambres} Chambre{searchChambres > 1 ? "s" : ""}, {searchAdultes} Ad., {searchEnfants} Enf.</span>
-                  <span className="text-gray-400 text-xs ml-2">▼</span>
-                </span>
               </div>
-
-              {showGuestPicker && (
-                <div className="absolute top-[calc(100%+10px)] left-0 bg-white rounded-2xl shadow-2xl border border-gray-100 w-[320px] z-50 text-left">
-                  <div className="max-h-[360px] overflow-y-auto p-4 space-y-4">
-                    {rooms.map((room, rIdx) => (
-                      <div key={rIdx} className="border-b border-gray-100 pb-4 last:border-none last:pb-0">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="font-bold text-sm text-[#1a1a2e]">Chambre {rIdx + 1}</span>
-                          {rooms.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeRoom(rIdx)}
-                              className="text-[#e91e8c] hover:bg-[#e91e8c]/10 text-xs px-2 py-1 rounded transition-colors"
-                            >
-                              Supprimer
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Adults */}
-                        <div className="flex justify-between items-center text-sm mb-3">
-                          <span className="text-gray-700 font-medium">Adulte(s)</span>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => updateAdults(rIdx, -1)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:text-[#e91e8c] hover:border-[#e91e8c]">−</button>
-                            <span className="font-bold w-4 text-center">{room.adults}</span>
-                            <button onClick={() => updateAdults(rIdx, 1)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:text-[#e91e8c] hover:border-[#e91e8c]">+</button>
-                          </div>
-                        </div>
-
-                        {/* Children */}
-                        <div className="flex justify-between items-center text-sm mb-2">
-                          <span className="text-gray-700 font-medium">Enfant(s) <span className="block text-[10px] text-gray-400">0 à 11 ans</span></span>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => removeChild(rIdx)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:text-[#e91e8c] hover:border-[#e91e8c]">−</button>
-                            <span className="font-bold w-4 text-center">{room.childrenAges.length}</span>
-                            <button onClick={() => addChild(rIdx)} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:text-[#e91e8c] hover:border-[#e91e8c]">+</button>
-                          </div>
-                        </div>
-
-                        {room.childrenAges.length > 0 && (
-                          <div className="mt-2 space-y-2 p-2 bg-gray-50 rounded border border-gray-100">
-                            {room.childrenAges.map((age, cIdx) => (
-                              <div key={cIdx} className="flex justify-between items-center text-xs">
-                                <span>Âge enfant {cIdx + 1}</span>
-                                <select value={age} onChange={(e) => setChildAge(rIdx, cIdx, Number(e.target.value))} className="border p-1 rounded">
-                                  {Array.from({length: 12}, (_, k) => <option key={k} value={k}>{k}</option>)}
-                                </select>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {rooms.length < 5 && (
-                    <button onClick={addRoom} className="w-full py-2 text-xs font-bold text-[#e91e8c] border-t border-gray-100 bg-gray-50">+ Ajouter chambre</button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Bouton Modifier (active le Datepicker) */}
-            <div className="px-2 w-full md:w-auto mt-2 md:mt-0 pb-2 md:pb-0">
-               <button 
-                 onClick={() => setShowDatePicker(true)}
-                 className="w-full md:w-auto bg-gray-50 hover:bg-gray-100 text-[#1a1a2e] border border-gray-200 font-semibold px-6 py-3 rounded-lg text-sm transition-all flex items-center justify-center gap-2"
-               >
-                 ✏️ Modifier
-               </button>
-            </div>
+            )}
           </div>
 
-          {/* Messages Succès / Erreur */}
+          {/* Succès / Erreur */}
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center space-y-3">
-              <h3 className="text-xl font-bold text-green-800">🎉 Réservation envoyée !</h3>
-              <p className="text-green-600 text-sm">Votre réservation a été enregistrée avec succès.</p>
-              <Link href="/reservations" className="inline-block mt-2 bg-[#e91e8c] text-white px-6 py-2 rounded-lg font-bold">Voir mes réservations</Link>
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
+              <p className="text-3xl mb-2">🎉</p>
+              <h3 className="text-xl font-bold text-green-800 mb-1">Réservation envoyée !</h3>
+              <p className="text-green-600 text-sm mb-4">Votre réservation a été enregistrée avec succès.</p>
+              <Link href="/reservations" className="inline-block bg-[#e91e8c] text-white px-6 py-2 rounded-xl font-bold">Voir mes réservations</Link>
             </div>
           )}
           {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 text-sm font-semibold">{error}</div>}
 
-          {/* Liste des Chambres sélectionnables (Design Image 3) */}
-          <div className="space-y-4">
-            {rooms.map((room, roomIdx) => {
-              const options = getChambresForRoom(room);
-              const selectedId = selectedChambres[roomIdx];
+          {/* Liste des chambres */}
+          {!success && (
+            <div className="space-y-4">
+              {rooms.map((room, roomIdx) => {
+                const options    = getChambresForRoom(room);
+                const selectedId = selectedChambres[roomIdx];
+                return (
+                  <div key={roomIdx} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center gap-2">
+                      <span className="text-lg">🛏️</span>
+                      <span className="font-bold text-[#1a1a2e] text-sm">
+                        Chambre {roomIdx+1} :{" "}
+                        <span className="font-medium text-gray-500">
+                          {room.adults} Adulte{room.adults>1?"s":""}
+                          {room.childrenAges.length > 0 ? `, ${room.childrenAges.length} Enfant${room.childrenAges.length>1?"s":""}` : ""}
+                        </span>
+                      </span>
+                    </div>
 
-              return (
-                <div key={roomIdx} className="bg-white border border-gray-300 rounded-xl overflow-hidden shadow-sm">
-                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
-                    <span className="text-gray-500 text-lg">🛏️</span>
-                    <span className="font-bold text-[#1a1a2e] text-sm">
-                      Chambre {roomIdx + 1} : <span className="font-medium text-gray-600">{room.adults} Adulte{room.adults > 1 ? "s" : ""}</span>
-                    </span>
-                  </div>
+                    {options.length === 0 ? (
+                      <div className="p-6 text-center text-gray-400 text-sm">
+                        <p>Aucune chambre disponible pour {room.adults} adulte{room.adults>1?"s":""}.</p>
+                        <p className="text-xs mt-1 text-gray-300">Modifiez le nombre de voyageurs ci-dessus.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100">
+                        {options.map((chambre) => {
+                          const isSelected   = selectedId === String(chambre.id);
+                          const isDisponible = chambre.quantite > 0;
+                          const totalPrix    = calculateChambreTotal(chambre, room);
+                          return (
+                            <div
+                              key={chambre.id}
+                              onClick={() => isDisponible && setSelectedChambres(prev => ({...prev,[roomIdx]:String(chambre.id)}))}
+                              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 transition cursor-pointer
+                                ${isSelected ? "bg-pink-50" : "hover:bg-gray-50"}
+                                ${!isDisponible ? "opacity-50 cursor-not-allowed" : ""}`}
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <input
+                                  type="radio"
+                                  checked={isSelected}
+                                  readOnly
+                                  disabled={!isDisponible}
+                                  className="w-4 h-4 accent-[#e91e8c] cursor-pointer shrink-0"
+                                />
+                                <div className="min-w-0">
+                                  <span className="font-semibold text-gray-800 text-sm block truncate">{chambre.nom}</span>
+                                  <span className="text-xs text-gray-400">👥 {chambre.capacite_adultes} ad. — {chambre.quantite} dispo.</span>
+                                </div>
+                              </div>
 
-                  {options.length === 0 ? (
-                    <div className="p-6 text-center text-gray-400 text-sm">Aucune chambre disponible.</div>
-                  ) : (
-                    <div className="divide-y divide-gray-100">
-                      {options.map((chambre: Chambre) => {
-                        const totalPrix = calculateChambreTotal(chambre, room);
-                        const isSelected = selectedId === String(chambre.id);
-                        const isDisponible = chambre.quantite > 0;
-
-                        return (
-                          <div key={chambre.id} className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors ${isSelected ? "bg-pink-50/30" : "hover:bg-gray-50"} ${!isDisponible ? "opacity-50" : ""}`}>
-                            
-                            <div className="flex items-center gap-3 flex-1">
-                              <input
-                                type="radio"
-                                name={`room-${roomIdx}`}
-                                checked={isSelected}
-                                disabled={!isDisponible}
-                                onChange={() => setSelectedChambres(prev => ({ ...prev, [roomIdx]: String(chambre.id) }))}
-                                className="w-5 h-5 text-[#e91e8c] focus:ring-[#e91e8c] cursor-pointer"
-                              />
-                              <label className="cursor-pointer" onClick={() => isDisponible && setSelectedChambres(prev => ({ ...prev, [roomIdx]: String(chambre.id) }))}>
-                                <span className="font-semibold text-gray-800 block text-sm">{chambre.nom} <span className="text-gray-400 ml-1">👥</span></span>
-                              </label>
-                            </div>
-
-                            <div className="w-full sm:w-48">
                               <select
-                                value={selectedPensions[chambre.id] || (chambre.pensions && chambre.pensions[0]?.id) || ""}
-                                onChange={(e) => setSelectedPensions(prev => ({ ...prev, [chambre.id]: Number(e.target.value) }))}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-semibold bg-white focus:outline-none focus:border-[#e91e8c]"
+                                value={selectedPensions[chambre.id] || chambre.pensions?.[0]?.id || ""}
+                                onChange={e => { e.stopPropagation(); setSelectedPensions(prev => ({...prev,[chambre.id]:+e.target.value})); }}
+                                onClick={e => e.stopPropagation()}
+                                className="border border-gray-200 rounded-lg px-3 py-2 text-xs font-semibold bg-white focus:outline-none focus:border-[#e91e8c] w-full sm:w-48 shrink-0"
                               >
-                                {chambre.pensions?.map((p) => (
+                                {chambre.pensions?.map(p => (
                                   <option key={p.id} value={p.id}>
-                                    {p.nom} {p.pivot.supplement_prix > 0 ? `(+${p.pivot.supplement_prix} DT)` : ""}
+                                    {p.nom}{p.pivot.supplement_prix > 0 ? ` (+${p.pivot.supplement_prix} DT)` : ""}
                                   </option>
                                 ))}
                               </select>
-                            </div>
 
-                            <div className="w-24 text-center">
-                              <span className={`text-xs font-bold ${isDisponible ? "text-green-500" : "text-red-500"}`}>
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${isDisponible ? "text-green-600 bg-green-50" : "text-red-500 bg-red-50"}`}>
                                 {isDisponible ? "Disponible" : "Complet"}
                               </span>
+
+                              <div className="text-right shrink-0 min-w-[90px]">
+                                <span className="text-xl font-extrabold text-[#1a1a2e]">{totalPrix}</span>
+                                <span className="text-[11px] text-gray-400 font-bold ml-0.5 align-top">TND</span>
+                              </div>
                             </div>
-
-                            <div className="w-28 text-right">
-                              <span className="text-[#1a1a2e] font-extrabold text-xl">{totalPrix}</span>
-                              <span className="text-[10px] text-gray-500 font-bold ml-1 align-top">TND</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Résumé prix total et actions en bas */}
-          {allRoomsHaveSelection && grandTotal > 0 && !success && (
-            <div className="flex flex-col items-end pt-6 border-t border-gray-200 mt-6 space-y-4">
-              <div className="text-right">
-                <p className="text-[11px] text-[#e91e8c] font-bold bg-pink-50 border border-pink-100 px-2 py-0.5 rounded inline-block mb-2">-{discountTotal} TND</p>
-                <div className="flex items-end gap-3 justify-end">
-                   <span className="text-gray-400 line-through font-semibold text-lg">{originalTotal} TND</span>
-                   <span className="text-3xl font-extrabold text-[#e91e8c]">{grandTotal} <span className="text-sm">TND</span></span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-end gap-3 w-full max-w-md">
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => handleReservationClick("deposit")}
-                  className="bg-[#e91e8c] hover:bg-[#d11a7e] text-white font-bold px-6 py-3.5 rounded-xl transition-all shadow-md flex-1 disabled:opacity-50"
-                >
-                  {submitting ? "Traitement..." : "Valider et Payer"}
-                </button>
-              </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
+          {/* Récapitulatif total & bouton de réservation */}
+          {!success && allRoomsHaveSelection && grandTotal > 0 && (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-gray-400 line-through text-lg">{originalTotal} TND</span>
+                    <span className="text-3xl font-extrabold text-[#e91e8c]">{grandTotal} TND</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Pour {nbNuits()} nuit{nbNuits()>1?"s":""} · {searchChambresCount} chambre{searchChambresCount>1?"s":""}
+                    <span className="ml-2 bg-pink-100 text-[#e91e8c] text-[10px] font-bold px-2 py-0.5 rounded">-{discountTotal} TND</span>
+                  </p>
+                </div>
+                <div className="flex gap-3 w-full md:w-auto">
+                  <button
+                    onClick={() => handleReservationClick("agence")}
+                    disabled={submitting}
+                    className="flex-1 md:flex-none border border-[#e91e8c] text-[#e91e8c] hover:bg-pink-50 font-bold text-sm px-6 py-3 rounded-xl transition disabled:opacity-50"
+                  >
+                    🏪 Passer à l'agence
+                  </button>
+                  <button
+                    onClick={() => handleReservationClick("deposit")}
+                    disabled={submitting}
+                    className="flex-1 md:flex-none bg-[#e91e8c] hover:bg-[#d11a7e] text-white font-bold text-sm px-6 py-3 rounded-xl transition shadow-md disabled:opacity-50"
+                  >
+                    {submitting ? "Traitement..." : `💳 Payer ${depositAmount} TND maintenant`}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-3 flex items-center gap-1 justify-center">🔒 Paiement 100% sécurisé</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
