@@ -3,8 +3,11 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import DatePicker from "react-datepicker";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { fr } from "date-fns/locale/fr";
 import "react-datepicker/dist/react-datepicker.css";
+
+registerLocale("fr", fr);
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
@@ -664,8 +667,8 @@ export default function HotelDetailPage() {
           <h2 className="text-2xl font-bold text-[#1a1a2e]">Chambres disponibles</h2>
 
           {/* Barre de filtre avec DatePicker intégré */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-visible">
-            <div className="flex flex-col md:flex-row" ref={dateRef}>
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-visible" ref={dateRef}>
+            <div className="flex flex-col md:flex-row">
 
               {/* Dates */}
               <div
@@ -862,9 +865,9 @@ export default function HotelDetailPage() {
                               >
                                 {chambre.pensions?.map(p => (
                                   <option key={p.id} value={p.id}>
-                                    {p.nom}{p.pivot.supplement_prix > 0 ? ` (+${p.pivot.supplement_prix} DT)` : ""}
+                                    {p.nom}
                                   </option>
-                                ))}
+                                )) }
                               </select>
 
                               <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${isDisponible ? "text-green-600 bg-green-50" : "text-red-500 bg-red-50"}`}>
