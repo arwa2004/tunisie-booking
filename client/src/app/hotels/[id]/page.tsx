@@ -282,7 +282,12 @@ export default function HotelDetailPage() {
     }, 0);
   }, [hotel, rooms, selectedChambres, selectedPensions, searchArrivee, searchDepart]);
 
-  const allRoomsHaveSelection = rooms.every((_, idx) => !!selectedChambres[idx]);
+  const allRoomsHaveSelection = rooms.every((_, idx) => {
+    const chambreId = selectedChambres[idx];
+    if (!chambreId) return false;
+    const chambre = hotel?.chambres.find(c => String(c.id) === chambreId);
+    return chambre ? chambre.quantite > 0 : false;
+  });
   const originalTotal = Math.round(grandTotal * 1.25);
   const discountTotal = originalTotal - grandTotal;
   const depositAmount = Math.round(grandTotal * 0.15);
@@ -834,14 +839,28 @@ export default function HotelDetailPage() {
                         {options.map((chambre) => {
                           const isSelected   = selectedId === String(chambre.id);
                           const isDisponible = chambre.quantite > 0;
+                          const isLowStock   = chambre.quantite > 0 && chambre.quantite <= 3;
                           const totalPrix    = calculateChambreTotal(chambre, room);
+
+                          const availabilityLabel = !isDisponible
+                            ? "Complet"
+                            : isLowStock
+                              ? `⚡ Il reste ${chambre.quantite} chambre${chambre.quantite > 1 ? "s" : ""} !`
+                              : "Disponible";
+
+                          const availabilityClass = !isDisponible
+                            ? "text-red-600 bg-red-50 border border-red-200"
+                            : isLowStock
+                              ? "text-orange-600 bg-orange-50 border border-orange-200 animate-pulse"
+                              : "text-green-600 bg-green-50";
+
                           return (
                             <div
                               key={chambre.id}
                               onClick={() => isDisponible && setSelectedChambres(prev => ({...prev,[roomIdx]:String(chambre.id)}))}
-                              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 transition cursor-pointer
-                                ${isSelected ? "bg-pink-50" : "hover:bg-gray-50"}
-                                ${!isDisponible ? "opacity-50 cursor-not-allowed" : ""}`}
+                              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 transition
+                                ${isDisponible ? "cursor-pointer" : "cursor-not-allowed"}
+                                ${isSelected ? "bg-pink-50 ring-1 ring-[#e91e8c]/20" : isDisponible ? "hover:bg-gray-50" : "opacity-60"}`}
                             >
                               <div className="flex items-center gap-3 flex-1 min-w-0">
                                 <input
@@ -853,7 +872,7 @@ export default function HotelDetailPage() {
                                 />
                                 <div className="min-w-0">
                                   <span className="font-semibold text-gray-800 text-sm block truncate">{chambre.nom}</span>
-                                  <span className="text-xs text-gray-400">👥 {chambre.capacite_adultes} ad. — {chambre.quantite} dispo.</span>
+                                  <span className="text-xs text-gray-400">👥 {chambre.capacite_adultes} ad. max</span>
                                 </div>
                               </div>
 
@@ -861,22 +880,29 @@ export default function HotelDetailPage() {
                                 value={selectedPensions[chambre.id] || chambre.pensions?.[0]?.id || ""}
                                 onChange={e => { e.stopPropagation(); setSelectedPensions(prev => ({...prev,[chambre.id]:+e.target.value})); }}
                                 onClick={e => e.stopPropagation()}
-                                className="border border-gray-200 rounded-lg px-3 py-2 text-xs font-semibold bg-white focus:outline-none focus:border-[#e91e8c] w-full sm:w-48 shrink-0"
+                                disabled={!isDisponible}
+                                className="border border-gray-200 rounded-lg px-3 py-2 text-xs font-semibold bg-white focus:outline-none focus:border-[#e91e8c] w-full sm:w-48 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 {chambre.pensions?.map(p => (
                                   <option key={p.id} value={p.id}>
                                     {p.nom}
                                   </option>
-                                )) }
+                                ))}
                               </select>
 
-                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${isDisponible ? "text-green-600 bg-green-50" : "text-red-500 bg-red-50"}`}>
-                                {isDisponible ? "Disponible" : "Complet"}
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 whitespace-nowrap ${availabilityClass}`}>
+                                {availabilityLabel}
                               </span>
 
                               <div className="text-right shrink-0 min-w-[90px]">
-                                <span className="text-xl font-extrabold text-[#1a1a2e]">{totalPrix}</span>
-                                <span className="text-[11px] text-gray-400 font-bold ml-0.5 align-top">TND</span>
+                                {isDisponible ? (
+                                  <>
+                                    <span className="text-xl font-extrabold text-[#1a1a2e]">{totalPrix}</span>
+                                    <span className="text-[11px] text-gray-400 font-bold ml-0.5 align-top">TND</span>
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-red-400 font-semibold">Indisponible</span>
+                                )}
                               </div>
                             </div>
                           );

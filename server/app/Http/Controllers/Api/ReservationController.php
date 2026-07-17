@@ -33,16 +33,6 @@ class ReservationController extends Controller
 
         $chambre = \App\Models\Chambre::find($request->chambre_id);
 
-        // Récupérer le supplément pension depuis la table pivot
-        $supplementPension = 0;
-        if ($request->pension_id) {
-            // On cherche la pension dans les pensions attachées à cette chambre
-            $pensionPivot = $chambre->pensions()->where('pension_id', $request->pension_id)->first();
-            if ($pensionPivot) {
-                $supplementPension = $pensionPivot->pivot->supplement_prix;
-            }
-        }
-
         // Validation 1 : Vérifier que la chambre appartient bien à l'hôtel choisi
         if ($chambre->hotel_id !== (int) $request->hotel_id) {
             return response()->json(['message' => 'La chambre sélectionnée n\'appartient pas à cet hôtel.'], 422);
@@ -51,6 +41,20 @@ class ReservationController extends Controller
         // Validation 2 : Vérifier que la chambre a la capacité d'accueillir les personnes
         if (!$chambre->peutAccueillir($request->nb_adultes, $request->nb_enfants ?? 0)) {
             return response()->json(['message' => 'La capacité de cette chambre est insuffisante pour le nombre de personnes.'], 422);
+        }
+
+        // Validation 3 : Vérifier la disponibilité en quantité de la chambre
+        if ($chambre->quantite < $request->nb_chambres) {
+            return response()->json(['message' => 'Désolé, il n\'y a plus assez de chambres disponibles pour ce type.'], 422);
+        }
+
+        // Récupérer le supplément pension depuis la table pivot
+        $supplementPension = 0;
+        if ($request->pension_id) {
+            $pensionPivot = $chambre->pensions()->where('pension_id', $request->pension_id)->first();
+            if ($pensionPivot) {
+                $supplementPension = $pensionPivot->pivot->supplement_prix;
+            }
         }
 
         // Instancier temporairement la réservation pour utiliser la logique métier du modèle
@@ -62,6 +66,9 @@ class ReservationController extends Controller
         ]);
 
         $prixTotal = $tempReservation->calculatePrixTotal($chambre->prix_base_nuit, $supplementPension);
+
+        // Décrémenter la quantité disponible de la chambre
+        $chambre->decrement('quantite', $request->nb_chambres);
 
         $reservation = Reservation::create([
             'user_id'      => $request->user()->id,
@@ -106,6 +113,26 @@ class ReservationController extends Controller
             'statut' => 'required|in:en_attente,confirmee,annulee',
         ]);
 
+        $oldStatut = $reservation->statut;
+        $newStatut = $request->statut;
+
+        if ($oldStatut !== 'annulee' && $newStatut === 'annulee') {
+            // Rembourser la quantité
+            $chambre = $reservation->chambre;
+            if ($chambre) {
+                $chambre->increment('quantite', $reservation->nb_chambres);
+            }
+        } elseif ($oldStatut === 'annulee' && $newStatut !== 'annulee') {
+            // Si on sort de l'annulation, on valide et on décrémente
+            $chambre = $reservation->chambre;
+            if ($chambre) {
+                if ($chambre->quantite < $reservation->nb_chambres) {
+                    return response()->json(['message' => 'Désolé, il n\'y a plus de chambres disponibles pour réactiver cette réservation.'], 422);
+                }
+                $chambre->decrement('quantite', $reservation->nb_chambres);
+            }
+        }
+
         $reservation->update(['statut' => $request->statut]);
 
         return response()->json($reservation);
@@ -118,6 +145,14 @@ class ReservationController extends Controller
 
         if (!$reservation) {
             return response()->json(['message' => 'Réservation non trouvée'], 404);
+        }
+
+        // Rembourser la quantité s'il n'était pas déjà annulé
+        if ($reservation->statut !== 'annulee') {
+            $chambre = $reservation->chambre;
+            if ($chambre) {
+                $chambre->increment('quantite', $reservation->nb_chambres);
+            }
         }
 
         $reservation->delete();
