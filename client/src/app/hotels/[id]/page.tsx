@@ -227,11 +227,12 @@ export default function HotelDetailPage() {
     setRooms(rooms.map((r, i) => { if (i !== rIdx) return r; const a=[...r.childrenAges]; a[cIdx]=age; return {...r,childrenAges:a}; }));
 
   // ── Fetch hotel ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    fetch(`${API}/hotels/${id}`)
+  const fetchHotel = () => {
+    return fetch(`${API}/hotels/${id}`)
       .then(r => r.json())
       .then(data => { setHotel(data); setLoading(false); });
-  }, [id]);
+  };
+  useEffect(() => { fetchHotel(); }, [id]);
 
   // ── Fetch avis ───────────────────────────────────────────────────────────
   const fetchAvis = () => {
@@ -328,6 +329,8 @@ export default function HotelDetailPage() {
         setError(results.find((r: any) => r?.message)?.message || "Erreur lors de la réservation."); return;
       }
       setSuccess(true);
+      // Rafraîchir les données de l'hôtel pour mettre à jour les quantités en temps réel
+      await fetchHotel();
     } catch { setError("Erreur de connexion au serveur."); }
     finally { setSubmitting(false); }
   };
