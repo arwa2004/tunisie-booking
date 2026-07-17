@@ -55,6 +55,7 @@ function HotelCardDetailed({
   depart,
   adultes,
   enfants,
+  selectedPensions,
 }: {
   hotel: Hotel;
   nbNuits: number;
@@ -63,6 +64,7 @@ function HotelCardDetailed({
   depart?: string;
   adultes?: number;
   enfants?: number;
+  selectedPensions: Set<number>;
 }) {
   const queryParams = new URLSearchParams();
   if (arrivee) queryParams.set("arrivee", arrivee);
@@ -106,6 +108,17 @@ function HotelCardDetailed({
       setSelectedChambreId(bestMatchingChambre.id);
     }
   }, [bestMatchingChambre?.id]);
+
+  // Automatically switch active tab when a pension is selected in the sidebar
+  useEffect(() => {
+    if (selectedPensions && selectedPensions.size > 0) {
+      // Find the first selected pension that is available for this hotel
+      const match = pensionsDisponibles.find(p => selectedPensions.has(p.id));
+      if (match) {
+        setActivePensionId(match.id);
+      }
+    }
+  }, [selectedPensions, pensionsDisponibles]);
 
   const selectedChambre = hotel.chambres.find((c) => c.id === selectedChambreId);
 
@@ -446,7 +459,7 @@ export default function DestinationHotelsSection({
         <div className="space-y-6">
           {hotelsFiltres.length > 0 ? (
             hotelsFiltres.map((hotel) => (
-              <HotelCardDetailed
+               <HotelCardDetailed
                 key={hotel.id}
                 hotel={hotel}
                 nbNuits={nbNuits}
@@ -455,6 +468,7 @@ export default function DestinationHotelsSection({
                 depart={depart}
                 adultes={adultes}
                 enfants={enfants}
+                selectedPensions={selectedPensions}
               />
             ))
           ) : (
