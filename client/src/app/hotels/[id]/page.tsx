@@ -802,20 +802,10 @@ export default function HotelDetailPage() {
             )}
           </div>
 
-          {/* Succès / Erreur */}
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
-              <p className="text-3xl mb-2">🎉</p>
-              <h3 className="text-xl font-bold text-green-800 mb-1">Réservation envoyée !</h3>
-              <p className="text-green-600 text-sm mb-4">Votre réservation a été enregistrée avec succès.</p>
-              <Link href="/reservations" className="inline-block bg-[#e91e8c] text-white px-6 py-2 rounded-xl font-bold">Voir mes réservations</Link>
-            </div>
-          )}
           {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 text-sm font-semibold">{error}</div>}
 
           {/* Liste des chambres */}
-          {!success && (
-            <div className="space-y-4">
+          <div className="space-y-4">
               {rooms.map((room, roomIdx) => {
                 const options    = getChambresForRoom(room);
                 const selectedId = selectedChambres[roomIdx];
@@ -916,10 +906,9 @@ export default function HotelDetailPage() {
                 );
               })}
             </div>
-          )}
 
           {/* Récapitulatif total & bouton de réservation */}
-          {!success && allRoomsHaveSelection && grandTotal > 0 && (
+          {allRoomsHaveSelection && grandTotal > 0 && (
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
@@ -954,6 +943,39 @@ export default function HotelDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Succès */}
+      {success && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-4 relative border border-gray-100 animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setSuccess(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-lg"
+            >
+              ✕
+            </button>
+            <p className="text-5xl">🎉</p>
+            <h3 className="text-2xl font-extrabold text-gray-900">Réservation envoyée !</h3>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Votre réservation a été enregistrée avec succès. Vous pouvez la suivre depuis votre profil.
+            </p>
+            <div className="flex flex-col gap-2 pt-2">
+              <Link
+                href="/reservations"
+                className="w-full bg-[#e91e8c] hover:bg-[#d11a7e] text-white font-bold py-3 rounded-xl transition shadow-md block text-center"
+              >
+                Voir mes réservations
+              </Link>
+              <button
+                onClick={() => setSuccess(false)}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition"
+              >
+                Continuer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
