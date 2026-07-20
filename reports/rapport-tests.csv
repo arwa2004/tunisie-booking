@@ -1,76 +1,89 @@
-"ID",Fichier / Module,Titre du Test,Code d'Assertion,Résultat Attendu,Statut,Durée (s),Détail Erreur
-AUT-1,AuthTest.php,Register returns token,test_register_returns_token,Retourne HTTP 201 (Créé),PASS,0.829,
-AUT-2,AuthTest.php,Login correct returns 200,test_login_correct_returns_200,Retourne HTTP 200 (OK),PASS,0.088,
-AUT-3,AuthTest.php,Login wrong password returns 401,test_login_wrong_password_returns_401,Retourne HTTP 401 (Non authentifié),PASS,0.268,
-AUT-4,AuthTest.php,Logout revokes token,test_logout_revokes_token,Retourne HTTP 200 (OK),PASS,0.044,
-AUT-5,AvisApiTest.php,Get avis returns list and stats,test_get_avis_returns_list_and_stats,Exécution correcte,PASS,0.057,
-AUT-6,AvisApiTest.php,Post avis without token returns 401,test_post_avis_without_token_returns_401,Exécution correcte,PASS,0.035,
-AUT-7,AvisApiTest.php,Post avis with token creates or updates,test_post_avis_with_token_creates_or_updates,Exécution correcte,PASS,0.052,
-AUT-8,AvisApiTest.php,Post avis invalid notes returns 422,test_post_avis_invalid_notes_returns_422,Exécution correcte,PASS,0.053,
-AUT-9,AvisApiTest.php,Delete avis authorized,test_delete_avis_authorized,Exécution correcte,PASS,0.044,
-AUT-10,ChambreApiTest.php,Get chambres returns list,test_get_chambres_returns_list,Exécution correcte,PASS,0.050,
-AUT-11,ChambreApiTest.php,Get chambre inexistante returns 404,test_get_chambre_inexistante_returns_404,Retourne HTTP 404 (Introuvable),PASS,0.038,
-AUT-12,ChambreApiTest.php,Create chambre without token returns 401,test_create_chambre_without_token_returns_401,Exécution correcte,PASS,0.037,
-AUT-13,ChambreApiTest.php,Create chambre valid returns 201,test_create_chambre_valid_returns_201,Exécution correcte,PASS,0.040,
-AUT-14,ChambreApiTest.php,Update chambre prix returns 200,test_update_chambre_prix_returns_200,Exécution correcte,PASS,0.045,
-AUT-15,ChambreApiTest.php,Delete chambre returns 200,test_delete_chambre_returns_200,Exécution correcte,PASS,0.040,
-AUT-16,ExampleTest.php,The application returns a successful response,test_the_application_returns_a_successful_response,Retourne HTTP 200 (OK),PASS,0.071,
-AUT-17,HotelApiTest.php,Get hotels returns list,test_get_hotels_returns_list,Retourne HTTP 200 (OK),PASS,0.089,
-AUT-18,HotelApiTest.php,Get hotel by id returns correct hotel,test_get_hotel_by_id_returns_correct_hotel,Exécution correcte,PASS,0.104,
-AUT-19,HotelApiTest.php,Get hotel inexistant returns 404,test_get_hotel_inexistant_returns_404,Retourne HTTP 404 (Introuvable),PASS,0.034,
-AUT-20,HotelApiTest.php,Create hotel without token returns 401,test_create_hotel_without_token_returns_401,Retourne HTTP 401 (Non authentifié),PASS,0.033,
-AUT-21,HotelApiTest.php,Create hotel with token returns 201,test_create_hotel_with_token_returns_201,Retourne HTTP 201 (Créé),PASS,0.073,
-AUT-22,ProfilApiTest.php,Me returns authenticated user,test_me_returns_authenticated_user,Retourne HTTP 200 (OK),PASS,0.081,
-AUT-23,ProfilApiTest.php,Update profile updates correctly,test_update_profile_updates_correctly,Retourne HTTP 200 (OK),PASS,0.039,
-AUT-24,ProfilApiTest.php,Update password wrong current returns 422,test_update_password_wrong_current_returns_422,Retourne HTTP 422 (Erreur validation),PASS,0.042,
-AUT-25,ReservationAdminTest.php,Get all reservations without admin returns 401,test_get_all_reservations_without_admin_returns_401,Retourne HTTP 403 (Interdit),PASS,0.075,
-AUT-26,ReservationAdminTest.php,Admin can list all reservations,test_admin_can_list_all_reservations,Retourne HTTP 200 (OK),PASS,0.048,
-AUT-27,ReservationAdminTest.php,Admin can confirm reservation,test_admin_can_confirm_reservation,Exécution correcte,PASS,0.042,
-AUT-28,ReservationAdminTest.php,Admin can cancel reservation,test_admin_can_cancel_reservation,Exécution correcte,PASS,0.042,
-AUT-29,ReservationAdminTest.php,Admin update invalid statut returns 422,test_admin_update_invalid_statut_returns_422,Exécution correcte,PASS,0.048,
-AUT-30,ReservationAdminTest.php,Admin can delete reservation,test_admin_can_delete_reservation,Exécution correcte,PASS,0.038,
-AUT-31,ReservationApiTest.php,Create reservation without token returns 401,test_create_reservation_without_token_returns_401,Retourne HTTP 401 (Non authentifié),PASS,0.041,
-AUT-32,ReservationApiTest.php,Create reservation with invalid data returns 422,test_create_reservation_with_invalid_data_returns_422,Retourne HTTP 422 (Erreur validation),PASS,0.070,
-AUT-33,ReservationApiTest.php,Create reservation valid returns 201 with prix,test_create_reservation_valid_returns_201_with_prix,Retourne HTTP 201 (Créé),PASS,0.046,
-AUT-34,ReservationApiTest.php,Create reservation chambre wrong hotel returns 422,test_create_reservation_chambre_wrong_hotel_returns_422,Exécution correcte,PASS,0.045,
-AUT-35,ReservationApiTest.php,Create reservation capacite insuffisante returns 422,test_create_reservation_capacite_insuffisante_returns_422,Retourne HTTP 422 (Erreur validation),PASS,0.039,
-AUT-36,DestinationTest.php,HasNom retourne true si nom renseigne,test_hasNom_retourne_true_si_nom_renseigne,Exécution correcte,PASS,0.039,
-AUT-37,DestinationTest.php,HasNom retourne false si nom vide,test_hasNom_retourne_false_si_nom_vide,Exécution correcte,PASS,0.001,
-AUT-38,DestinationTest.php,HasNom retourne false si nom manquant,test_hasNom_retourne_false_si_nom_manquant,Exécution correcte,PASS,0.000,
-AUT-39,DestinationTest.php,HasRegion retourne true si region renseignee,test_hasRegion_retourne_true_si_region_renseignee,Exécution correcte,PASS,0.000,
-AUT-40,DestinationTest.php,HasRegion retourne false si region vide,test_hasRegion_retourne_false_si_region_vide,Exécution correcte,PASS,0.000,
-AUT-41,DestinationTest.php,GetNomComplet retourne format correct,test_getNomComplet_retourne_format_correct,Exécution correcte,PASS,0.001,
-AUT-42,ExampleTest.php,That true is true,test_that_true_is_true,Exécution correcte,PASS,0.034,
-AUT-43,HotelTest.php,IsDisponible retourne true quand disponible,test_isDisponible_retourne_true_quand_disponible,Exécution correcte,PASS,0.003,
-AUT-44,HotelTest.php,IsDisponible retourne false quand indisponible,test_isDisponible_retourne_false_quand_indisponible,Exécution correcte,PASS,0.000,
-AUT-45,HotelTest.php,IsEtoilesValide retourne true pour 1 a 5,test_isEtoilesValide_retourne_true_pour_1_a_5,Exécution correcte,PASS,0.001,
-AUT-46,HotelTest.php,IsEtoilesValide retourne false pour zero,test_isEtoilesValide_retourne_false_pour_zero,Exécution correcte,PASS,0.000,
-AUT-47,HotelTest.php,IsEtoilesValide retourne false pour six,test_isEtoilesValide_retourne_false_pour_six,Exécution correcte,PASS,0.000,
-AUT-48,HotelTest.php,IsPrixValide retourne true pour prix positif,test_isPrixValide_retourne_true_pour_prix_positif,Exécution correcte,PASS,0.015,
-AUT-49,HotelTest.php,IsPrixValide retourne false pour prix zero,test_isPrixValide_retourne_false_pour_prix_zero,Exécution correcte,PASS,0.000,
-AUT-50,HotelTest.php,IsPrixValide retourne false pour prix negatif,test_isPrixValide_retourne_false_pour_prix_negatif,Exécution correcte,PASS,0.000,
-AUT-51,ReservationTest.php,GetNbNuits retourne nombre correct,test_getNbNuits_retourne_nombre_correct,Exécution correcte,PASS,0.010,
-AUT-52,ReservationTest.php,GetNbNuits retourne zero si meme date,test_getNbNuits_retourne_zero_si_meme_date,Exécution correcte,PASS,0.000,
-AUT-53,ReservationTest.php,GetNbNuits retourne zero si depart avant arrivee,test_getNbNuits_retourne_zero_si_depart_avant_arrivee,Exécution correcte,PASS,0.000,
-AUT-54,ReservationTest.php,GetNbNuits retourne zero si dates manquantes,test_getNbNuits_retourne_zero_si_dates_manquantes,Exécution correcte,PASS,0.000,
-AUT-55,ReservationTest.php,CalculatePrixTotal correct sans enfants,test_calculatePrixTotal_correct_sans_enfants,Exécution correcte,PASS,0.001,
-AUT-56,ReservationTest.php,CalculatePrixTotal avec enfants de differents ages,test_calculatePrixTotal_avec_enfants_de_differents_ages,Exécution correcte,PASS,0.000,
-AUT-57,ReservationTest.php,CalculatePrixTotal une nuit une chambre sans enfants,test_calculatePrixTotal_une_nuit_une_chambre_sans_enfants,Exécution correcte,PASS,0.000,
-AUT-58,ReservationTest.php,CalculatePrixTotal zero si meme date,test_calculatePrixTotal_zero_si_meme_date,Exécution correcte,PASS,0.000,
-AUT-59,ReservationTest.php,IsStatutValide retourne true pour en attente,test_isStatutValide_retourne_true_pour_en_attente,Exécution correcte,PASS,0.000,
-AUT-60,ReservationTest.php,IsStatutValide retourne true pour confirmee,test_isStatutValide_retourne_true_pour_confirmee,Exécution correcte,PASS,0.000,
-AUT-61,ReservationTest.php,IsStatutValide retourne true pour annulee,test_isStatutValide_retourne_true_pour_annulee,Exécution correcte,PASS,0.000,
-AUT-62,ReservationTest.php,IsStatutValide retourne false pour statut inconnu,test_isStatutValide_retourne_false_pour_statut_inconnu,Exécution correcte,PASS,0.000,
-AUT-63,ReservationTest.php,CanTransitionTo en attente vers confirmee,test_canTransitionTo_en_attente_vers_confirmee,Exécution correcte,PASS,0.000,
-AUT-64,ReservationTest.php,CanTransitionTo en attente vers annulee,test_canTransitionTo_en_attente_vers_annulee,Exécution correcte,PASS,0.000,
-AUT-65,ReservationTest.php,CanTransitionTo annulee est etat terminal,test_canTransitionTo_annulee_est_etat_terminal,Exécution correcte,PASS,0.000,
-AUT-66,ReservationTest.php,CanTransitionTo retourne false pour statut invalide,test_canTransitionTo_retourne_false_pour_statut_invalide,Exécution correcte,PASS,0.000,
-AUT-67,ReservationTest.php,GetStatutsValides contient les trois statuts,test_getStatutsValides_contient_les_trois_statuts,Exécution correcte,PASS,0.005,
-AUT-68,VoyageTest.php,IsPrixValide retourne true pour prix positif,test_isPrixValide_retourne_true_pour_prix_positif,Exécution correcte,PASS,0.015,
-AUT-69,VoyageTest.php,IsPrixValide retourne false pour prix zero,test_isPrixValide_retourne_false_pour_prix_zero,Exécution correcte,PASS,0.000,
-AUT-70,VoyageTest.php,IsPrixValide retourne false pour prix negatif,test_isPrixValide_retourne_false_pour_prix_negatif,Exécution correcte,PASS,0.000,
-AUT-71,VoyageTest.php,IsDureeValide retourne true pour un jour,test_isDureeValide_retourne_true_pour_un_jour,Exécution correcte,PASS,0.000,
-AUT-72,VoyageTest.php,IsDureeValide retourne true pour une semaine,test_isDureeValide_retourne_true_pour_une_semaine,Exécution correcte,PASS,0.000,
-AUT-73,VoyageTest.php,IsDureeValide retourne false pour zero jour,test_isDureeValide_retourne_false_pour_zero_jour,Exécution correcte,PASS,0.000,
-AUT-74,VoyageTest.php,GetDureeLabel retourne un jour au singulier,test_getDureeLabel_retourne_un_jour_au_singulier,Exécution correcte,PASS,0.000,
-AUT-75,VoyageTest.php,GetDureeLabel retourne pluriel pour plusieurs jours,test_getDureeLabel_retourne_pluriel_pour_plusieurs_jours,Exécution correcte,PASS,0.000,
+"ID",Nom Hôtel,Région,Description,Résultat Attendu,Statut
+T-01,El Mouradi El Menzah,Hammamet,"Yasmine Hammamet, cet hôtel propose un hébergement confortable",Hôtel présent en base avec région et description correctes,PASS
+T-02,The Orangers Garden Villa & Bungalows,Hammamet,entouré de jardins d'orangers avec un accès direct à une plage privée,Hôtel présent en base avec région et description correctes,PASS
+T-03,Hasdrubal Prestige Thalassa & Spa Djerba,Djerba,"Sidi Mehrez, réputé pour son centre de thalassothérapie",Hôtel présent en base avec région et description correctes,PASS
+T-04,Djerba Plaza Thalasso & Spa,Djerba,architecture traditionnelle djerbienne et confort moderne,Hôtel présent en base avec région et description correctes,PASS
+T-05,Mövenpick Resort & Marine Spa Sousse,Sousse,"centre de Sousse, avec une plage de sable fin privée",Hôtel présent en base avec région et description correctes,PASS
+C-01,El Mouradi El Menzah,Calcul Prix,"Chambre Single Standard, Petit Déjeuner, 1 nuits, enfants: aucun",Le prix calculé doit être de 96 DT,PASS
+C-02,El Mouradi El Menzah,Calcul Prix,"Chambre Single Standard, Demi Pension, 3 nuits, enfants: aucun",Le prix calculé doit être de 408 DT,PASS
+C-03,El Mouradi El Menzah,Calcul Prix,"Chambre Double Standard, All Inclusive, 2 nuits, enfants: 14",Le prix calculé doit être de 540 DT,PASS
+C-04,El Mouradi El Menzah,Calcul Prix,"Chambre Double Standard, Petit Déjeuner, 2 nuits, enfants: 8",Le prix calculé doit être de 300 DT,PASS
+C-05,El Mouradi El Menzah,Calcul Prix,"Chambre Double Standard, Petit Déjeuner, 2 nuits, enfants: 1",Le prix calculé doit être de 240 DT,PASS
+Q-01,El Mouradi El Menzah,Stock Chambre,Vérifier la quantité disponible de la chambre : Chambre Single Standard,La quantité en base de données doit être de 8,PASS
+Q-02,El Mouradi El Menzah,Stock Chambre,Vérifier la quantité disponible de la chambre : Chambre Single Vue Piscine,La quantité en base de données doit être de 5,PASS
+Q-03,The Orangers Garden Villa & Bungalows,Stock Chambre,Vérifier la quantité disponible de la chambre : Chambre Double Standard,La quantité en base de données doit être de 12,PASS
+AUT-01,AuthTest,test_register_returns_token,Register returns token,Retourne HTTP 201 (Créé),PASS
+AUT-02,AuthTest,test_login_correct_returns_200,Login correct returns 200,Retourne HTTP 200 (OK),PASS
+AUT-03,AuthTest,test_login_wrong_password_returns_401,Login wrong password returns 401,Retourne HTTP 401 (Non authentifié),PASS
+AUT-04,AuthTest,test_logout_revokes_token,Logout revokes token,Retourne HTTP 200 (OK),PASS
+AUT-05,AvisApiTest,test_get_avis_returns_list_and_stats,Get avis returns list and stats,Exécution correcte,PASS
+AUT-06,AvisApiTest,test_post_avis_without_token_returns_401,Post avis without token returns 401,Exécution correcte,PASS
+AUT-07,AvisApiTest,test_post_avis_with_token_creates_or_updates,Post avis with token creates or updates,Exécution correcte,PASS
+AUT-08,AvisApiTest,test_post_avis_invalid_notes_returns_422,Post avis invalid notes returns 422,Exécution correcte,PASS
+AUT-09,AvisApiTest,test_delete_avis_authorized,Delete avis authorized,Exécution correcte,PASS
+AUT-10,ChambreApiTest,test_get_chambres_returns_list,Get chambres returns list,Exécution correcte,PASS
+AUT-11,ChambreApiTest,test_get_chambre_inexistante_returns_404,Get chambre inexistante returns 404,Retourne HTTP 404 (Introuvable),PASS
+AUT-12,ChambreApiTest,test_create_chambre_without_token_returns_401,Create chambre without token returns 401,Exécution correcte,PASS
+AUT-13,ChambreApiTest,test_create_chambre_valid_returns_201,Create chambre valid returns 201,Exécution correcte,PASS
+AUT-14,ChambreApiTest,test_update_chambre_prix_returns_200,Update chambre prix returns 200,Exécution correcte,PASS
+AUT-15,ChambreApiTest,test_delete_chambre_returns_200,Delete chambre returns 200,Exécution correcte,PASS
+AUT-16,ExampleTest,test_the_application_returns_a_successful_response,The application returns a successful response,Retourne HTTP 200 (OK),PASS
+AUT-17,HotelApiTest,test_get_hotels_returns_list,Get hotels returns list,Retourne HTTP 200 (OK),PASS
+AUT-18,HotelApiTest,test_get_hotel_by_id_returns_correct_hotel,Get hotel by id returns correct hotel,Exécution correcte,PASS
+AUT-19,HotelApiTest,test_get_hotel_inexistant_returns_404,Get hotel inexistant returns 404,Retourne HTTP 404 (Introuvable),PASS
+AUT-20,HotelApiTest,test_create_hotel_without_token_returns_401,Create hotel without token returns 401,Retourne HTTP 401 (Non authentifié),PASS
+AUT-21,HotelApiTest,test_create_hotel_with_token_returns_201,Create hotel with token returns 201,Retourne HTTP 201 (Créé),PASS
+AUT-22,ProfilApiTest,test_me_returns_authenticated_user,Me returns authenticated user,Retourne HTTP 200 (OK),PASS
+AUT-23,ProfilApiTest,test_update_profile_updates_correctly,Update profile updates correctly,Retourne HTTP 200 (OK),PASS
+AUT-24,ProfilApiTest,test_update_password_wrong_current_returns_422,Update password wrong current returns 422,Retourne HTTP 422 (Erreur validation),PASS
+AUT-25,ReservationAdminTest,test_get_all_reservations_without_admin_returns_401,Get all reservations without admin returns 401,Retourne HTTP 403 (Interdit),PASS
+AUT-26,ReservationAdminTest,test_admin_can_list_all_reservations,Admin can list all reservations,Retourne HTTP 200 (OK),PASS
+AUT-27,ReservationAdminTest,test_admin_can_confirm_reservation,Admin can confirm reservation,Exécution correcte,PASS
+AUT-28,ReservationAdminTest,test_admin_can_cancel_reservation,Admin can cancel reservation,Exécution correcte,PASS
+AUT-29,ReservationAdminTest,test_admin_update_invalid_statut_returns_422,Admin update invalid statut returns 422,Exécution correcte,PASS
+AUT-30,ReservationAdminTest,test_admin_can_delete_reservation,Admin can delete reservation,Exécution correcte,PASS
+AUT-31,ReservationApiTest,test_create_reservation_without_token_returns_401,Create reservation without token returns 401,Retourne HTTP 401 (Non authentifié),PASS
+AUT-32,ReservationApiTest,test_create_reservation_with_invalid_data_returns_422,Create reservation with invalid data returns 422,Retourne HTTP 422 (Erreur validation),PASS
+AUT-33,ReservationApiTest,test_create_reservation_valid_returns_201_with_prix,Create reservation valid returns 201 with prix,Retourne HTTP 201 (Créé),PASS
+AUT-34,ReservationApiTest,test_create_reservation_chambre_wrong_hotel_returns_422,Create reservation chambre wrong hotel returns 422,Exécution correcte,PASS
+AUT-35,ReservationApiTest,test_create_reservation_capacite_insuffisante_returns_422,Create reservation capacite insuffisante returns 422,Retourne HTTP 422 (Erreur validation),PASS
+AUT-36,DestinationTest,test_hasNom_retourne_true_si_nom_renseigne,HasNom retourne true si nom renseigne,Exécution correcte,PASS
+AUT-37,DestinationTest,test_hasNom_retourne_false_si_nom_vide,HasNom retourne false si nom vide,Exécution correcte,PASS
+AUT-38,DestinationTest,test_hasNom_retourne_false_si_nom_manquant,HasNom retourne false si nom manquant,Exécution correcte,PASS
+AUT-39,DestinationTest,test_hasRegion_retourne_true_si_region_renseignee,HasRegion retourne true si region renseignee,Exécution correcte,PASS
+AUT-40,DestinationTest,test_hasRegion_retourne_false_si_region_vide,HasRegion retourne false si region vide,Exécution correcte,PASS
+AUT-41,DestinationTest,test_getNomComplet_retourne_format_correct,GetNomComplet retourne format correct,Exécution correcte,PASS
+AUT-42,ExampleTest,test_that_true_is_true,That true is true,Exécution correcte,PASS
+AUT-43,HotelTest,test_isDisponible_retourne_true_quand_disponible,IsDisponible retourne true quand disponible,Exécution correcte,PASS
+AUT-44,HotelTest,test_isDisponible_retourne_false_quand_indisponible,IsDisponible retourne false quand indisponible,Exécution correcte,PASS
+AUT-45,HotelTest,test_isEtoilesValide_retourne_true_pour_1_a_5,IsEtoilesValide retourne true pour 1 a 5,Exécution correcte,PASS
+AUT-46,HotelTest,test_isEtoilesValide_retourne_false_pour_zero,IsEtoilesValide retourne false pour zero,Exécution correcte,PASS
+AUT-47,HotelTest,test_isEtoilesValide_retourne_false_pour_six,IsEtoilesValide retourne false pour six,Exécution correcte,PASS
+AUT-48,HotelTest,test_isPrixValide_retourne_true_pour_prix_positif,IsPrixValide retourne true pour prix positif,Exécution correcte,PASS
+AUT-49,HotelTest,test_isPrixValide_retourne_false_pour_prix_zero,IsPrixValide retourne false pour prix zero,Exécution correcte,PASS
+AUT-50,HotelTest,test_isPrixValide_retourne_false_pour_prix_negatif,IsPrixValide retourne false pour prix negatif,Exécution correcte,PASS
+AUT-51,ReservationTest,test_getNbNuits_retourne_nombre_correct,GetNbNuits retourne nombre correct,Exécution correcte,PASS
+AUT-52,ReservationTest,test_getNbNuits_retourne_zero_si_meme_date,GetNbNuits retourne zero si meme date,Exécution correcte,PASS
+AUT-53,ReservationTest,test_getNbNuits_retourne_zero_si_depart_avant_arrivee,GetNbNuits retourne zero si depart avant arrivee,Exécution correcte,PASS
+AUT-54,ReservationTest,test_getNbNuits_retourne_zero_si_dates_manquantes,GetNbNuits retourne zero si dates manquantes,Exécution correcte,PASS
+AUT-55,ReservationTest,test_calculatePrixTotal_correct_sans_enfants,CalculatePrixTotal correct sans enfants,Exécution correcte,PASS
+AUT-56,ReservationTest,test_calculatePrixTotal_avec_enfants_de_differents_ages,CalculatePrixTotal avec enfants de differents ages,Exécution correcte,PASS
+AUT-57,ReservationTest,test_calculatePrixTotal_une_nuit_une_chambre_sans_enfants,CalculatePrixTotal une nuit une chambre sans enfants,Exécution correcte,PASS
+AUT-58,ReservationTest,test_calculatePrixTotal_zero_si_meme_date,CalculatePrixTotal zero si meme date,Exécution correcte,PASS
+AUT-59,ReservationTest,test_isStatutValide_retourne_true_pour_en_attente,IsStatutValide retourne true pour en attente,Exécution correcte,PASS
+AUT-60,ReservationTest,test_isStatutValide_retourne_true_pour_confirmee,IsStatutValide retourne true pour confirmee,Exécution correcte,PASS
+AUT-61,ReservationTest,test_isStatutValide_retourne_true_pour_annulee,IsStatutValide retourne true pour annulee,Exécution correcte,PASS
+AUT-62,ReservationTest,test_isStatutValide_retourne_false_pour_statut_inconnu,IsStatutValide retourne false pour statut inconnu,Exécution correcte,PASS
+AUT-63,ReservationTest,test_canTransitionTo_en_attente_vers_confirmee,CanTransitionTo en attente vers confirmee,Exécution correcte,PASS
+AUT-64,ReservationTest,test_canTransitionTo_en_attente_vers_annulee,CanTransitionTo en attente vers annulee,Exécution correcte,PASS
+AUT-65,ReservationTest,test_canTransitionTo_annulee_est_etat_terminal,CanTransitionTo annulee est etat terminal,Exécution correcte,PASS
+AUT-66,ReservationTest,test_canTransitionTo_retourne_false_pour_statut_invalide,CanTransitionTo retourne false pour statut invalide,Exécution correcte,PASS
+AUT-67,ReservationTest,test_getStatutsValides_contient_les_trois_statuts,GetStatutsValides contient les trois statuts,Exécution correcte,PASS
+AUT-68,VoyageTest,test_isPrixValide_retourne_true_pour_prix_positif,IsPrixValide retourne true pour prix positif,Exécution correcte,PASS
+AUT-69,VoyageTest,test_isPrixValide_retourne_false_pour_prix_zero,IsPrixValide retourne false pour prix zero,Exécution correcte,PASS
+AUT-70,VoyageTest,test_isPrixValide_retourne_false_pour_prix_negatif,IsPrixValide retourne false pour prix negatif,Exécution correcte,PASS
+AUT-71,VoyageTest,test_isDureeValide_retourne_true_pour_un_jour,IsDureeValide retourne true pour un jour,Exécution correcte,PASS
+AUT-72,VoyageTest,test_isDureeValide_retourne_true_pour_une_semaine,IsDureeValide retourne true pour une semaine,Exécution correcte,PASS
+AUT-73,VoyageTest,test_isDureeValide_retourne_false_pour_zero_jour,IsDureeValide retourne false pour zero jour,Exécution correcte,PASS
+AUT-74,VoyageTest,test_getDureeLabel_retourne_un_jour_au_singulier,GetDureeLabel retourne un jour au singulier,Exécution correcte,PASS
+AUT-75,VoyageTest,test_getDureeLabel_retourne_pluriel_pour_plusieurs_jours,GetDureeLabel retourne pluriel pour plusieurs jours,Exécution correcte,PASS
