@@ -31,12 +31,59 @@ const STATUT_LABELS = {
   annulee:    "Annulée",
 };
 
+/* ── Modal config par type d'action ── */
+type ModalAction = "confirmer" | "annuler" | "supprimer" | null;
+
+const MODAL_CONFIG: Record<string, { icon: string; title: string; message: (r: Reservation) => string; confirmLabel: string; confirmColor: string; confirmHover: string }> = {
+  confirmer: {
+    icon: "✓",
+    title: "Confirmer cette réservation ?",
+    message: (r) =>
+      `Vous allez confirmer la réservation de ${r.user ? `${r.user.prenom} ${r.user.nom}` : "ce client"} à l'hôtel ${r.hotel?.nom ?? "—"} du ${r.date_arrivee} au ${r.date_depart} pour un montant de ${r.prix_total} DT.`,
+    confirmLabel: "Oui, confirmer",
+    confirmColor: "bg-green-600",
+    confirmHover: "hover:bg-green-700",
+  },
+  annuler: {
+    icon: "✕",
+    title: "Annuler cette réservation ?",
+    message: (r) =>
+      `Vous allez annuler la réservation de ${r.user ? `${r.user.prenom} ${r.user.nom}` : "ce client"} à l'hôtel ${r.hotel?.nom ?? "—"}. Le client sera notifié de cette annulation.`,
+    confirmLabel: "Oui, annuler",
+    confirmColor: "bg-amber-600",
+    confirmHover: "hover:bg-amber-700",
+  },
+  supprimer: {
+    icon: "🗑",
+    title: "Supprimer cette réservation ?",
+    message: (r) =>
+      `Vous allez supprimer définitivement la réservation #${r.id} de ${r.user ? `${r.user.prenom} ${r.user.nom}` : "ce client"}. Cette action est irréversible.`,
+    confirmLabel: "Oui, supprimer",
+    confirmColor: "bg-red-600",
+    confirmHover: "hover:bg-red-700",
+  },
+};
+
 export default function ReservationsAdminPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading]           = useState(true);
   const [filter, setFilter]             = useState<string>("tous");
   const [updatingId, setUpdatingId]     = useState<number | null>(null);
   const [deletingId, setDeletingId]     = useState<number | null>(null);
+
+  /* ── State pour le modal de confirmation ── */
+  const [modalAction, setModalAction]         = useState<ModalAction>(null);
+  const [modalReservation, setModalReservation] = useState<Reservation | null>(null);
+
+  /* ── State pour le toast de succès ── */
+  const [toast, setToast]   = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"green" | "amber" | "red">("green");
+
+  const showToast = (message: string, type: "green" | "amber" | "red") => {
+    setToast(message);
+    setToastType(type);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const token = () => localStorage.getItem("token");
 
@@ -54,8 +101,21 @@ export default function ReservationsAdminPage() {
     fetchReservations();
   }, []);
 
+  /* ── Ouvrir le modal au lieu d'agir directement ── */
+  const openModal = (action: ModalAction, reservation: Reservation) => {
+    setModalAction(action);
+    setModalReservation(reservation);
+  };
+
+  const closeModal = () => {
+    setModalAction(null);
+    setModalReservation(null);
+  };
+
+  /* ── Actions réelles (appelées uniquement après confirmation du modal) ── */
   const handleStatut = async (id: number, statut: "confirmee" | "annulee") => {
     setUpdatingId(id);
+    closeModal();
     try {
       const res = await fetch(`${API}/reservations/${id}`, {
         method: "PUT",
@@ -69,16 +129,20 @@ export default function ReservationsAdminPage() {
       setReservations((prev) =>
         prev.map((r) => (r.id === id ? { ...r, statut } : r))
       );
+      showToast(
+        statut === "confirmee" ? "Réservation confirmée avec succès !" : "Réservation annulée avec succès !",
+        statut === "confirmee" ? "green" : "amber"
+      );
     } catch {
-      alert("Erreur lors de la mise à jour du statut");
+      showToast("Erreur lors de la mise à jour du statut", "red");
     } finally {
       setUpdatingId(null);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Supprimer cette réservation ?")) return;
     setDeletingId(id);
+    closeModal();
     try {
       const res = await fetch(`${API}/reservations/${id}`, {
         method: "DELETE",
@@ -86,11 +150,20 @@ export default function ReservationsAdminPage() {
       });
       if (!res.ok) throw new Error();
       setReservations((prev) => prev.filter((r) => r.id !== id));
+      showToast("Réservation supprimée avec succès !", "red");
     } catch {
-      alert("Erreur lors de la suppression");
+      showToast("Erreur lors de la suppression", "red");
     } finally {
       setDeletingId(null);
     }
+  };
+
+  /* ── Exécuter l'action confirmée depuis le modal ── */
+  const handleModalConfirm = () => {
+    if (!modalReservation) return;
+    if (modalAction === "confirmer") handleStatut(modalReservation.id, "confirmee");
+    else if (modalAction === "annuler") handleStatut(modalReservation.id, "annulee");
+    else if (modalAction === "supprimer") handleDelete(modalReservation.id);
   };
 
   const filtered = filter === "tous"
@@ -190,7 +263,7 @@ export default function ReservationsAdminPage() {
                     <div className="flex items-center justify-end gap-1 flex-wrap">
                       {r.statut !== "confirmee" && (
                         <button
-                          onClick={() => handleStatut(r.id, "confirmee")}
+                          onClick={() => openModal("confirmer", r)}
                           disabled={updatingId === r.id}
                           className="px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                         >
@@ -199,7 +272,7 @@ export default function ReservationsAdminPage() {
                       )}
                       {r.statut !== "annulee" && (
                         <button
-                          onClick={() => handleStatut(r.id, "annulee")}
+                          onClick={() => openModal("annuler", r)}
                           disabled={updatingId === r.id}
                           className="px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50 rounded-lg transition-colors disabled:opacity-50"
                         >
@@ -207,7 +280,7 @@ export default function ReservationsAdminPage() {
                         </button>
                       )}
                       <button
-                        onClick={() => handleDelete(r.id)}
+                        onClick={() => openModal("supprimer", r)}
                         disabled={deletingId === r.id}
                         className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       >
@@ -221,6 +294,77 @@ export default function ReservationsAdminPage() {
           </table>
         )}
       </div>
+
+      {/* ── Modal de confirmation ── */}
+      {modalAction && modalReservation && MODAL_CONFIG[modalAction] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={closeModal}
+          style={{ animation: "fadeIn 0.2s ease-out" }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: "slideUp 0.3s ease-out" }}
+          >
+            {/* Icône et titre */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl ${MODAL_CONFIG[modalAction].confirmColor}`}>
+                {MODAL_CONFIG[modalAction].icon}
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">
+                {MODAL_CONFIG[modalAction].title}
+              </h3>
+            </div>
+
+            {/* Message descriptif */}
+            <p className="text-gray-600 text-sm leading-relaxed mb-6">
+              {MODAL_CONFIG[modalAction].message(modalReservation)}
+            </p>
+
+            {/* Boutons */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={closeModal}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Non, annuler
+              </button>
+              <button
+                onClick={handleModalConfirm}
+                className={`px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-colors ${MODAL_CONFIG[modalAction].confirmColor} ${MODAL_CONFIG[modalAction].confirmHover}`}
+              >
+                {MODAL_CONFIG[modalAction].confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Toast de succès ── */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2 ${
+            toastType === "green" ? "bg-green-600" : toastType === "amber" ? "bg-amber-600" : "bg-red-600"
+          }`}
+          style={{ animation: "slideUp 0.3s ease-out" }}
+        >
+          <span>{toastType === "green" ? "✓" : toastType === "amber" ? "⚠" : "🗑"}</span>
+          {toast}
+        </div>
+      )}
+
+      {/* ── Animations CSS ── */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
