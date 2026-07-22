@@ -96,8 +96,7 @@ class ReservationController extends Controller
                 'X-Webhook-Secret' => 'Kharkhour_2024',
             ])->post('https://arwabenamar.app.n8n.cloud/webhook/nouvelle-reservation', [
                 'user_email'   => $reservation->user->email,
-                'user_nom'     => $reservation->user->name, // ⚠️ vérifiez le nom exact du champ dans votre modèle User
-                'hotel_nom'    => $reservation->hotel->nom,
+                'user_nom' => $reservation->user->nom,                'hotel_nom'    => $reservation->hotel->nom,
                 'date_arrivee' => $reservation->date_arrivee,
                 'date_depart'  => $reservation->date_depart,
                 'nb_chambres'  => $reservation->nb_chambres,
