@@ -46,6 +46,12 @@ export default function EditHotelPage() {
   const [errors, setErrors]             = useState<Record<string, string[]>>({});
   const [chambres, setChambres]         = useState<Chambre[]>([]);
   const [savingChambreId, setSavingChambreId] = useState<number | null>(null);
+  const [toast, setToast]               = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const [form, setForm] = useState({
     destination_id: "",
@@ -220,10 +226,10 @@ export default function EditHotelPage() {
         }
       }
 
-      alert(`Chambre "${chambre.nom}" et suppléments de pension enregistrés avec succès !`);
+      showToast(`Chambre "${chambre.nom}" et suppléments de pension enregistrés avec succès !`, "success");
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Erreur réseau ou serveur.");
+      showToast(err.message || "Erreur réseau ou serveur.", "error");
     } finally {
       setSavingChambreId(null);
     }
@@ -565,6 +571,27 @@ export default function EditHotelPage() {
           </div>
         )}
       </div>
+
+      {/* ── Toast de notification professionnel ── */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-xl shadow-2xl text-white text-sm font-medium flex items-center gap-3 transition-all ${
+            toast.type === "success" ? "bg-emerald-600 border border-emerald-500" : "bg-rose-600 border border-rose-500"
+          }`}
+          style={{ animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)" }}
+        >
+          <span className="text-base">{toast.type === "success" ? "✓" : "⚠️"}</span>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* ── Animation CSS ── */}
+      <style jsx>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
     </div>
   );
 }
