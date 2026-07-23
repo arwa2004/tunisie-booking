@@ -12,6 +12,16 @@ interface Destination {
   nom: string;
 }
 
+interface PensionPivot {
+  supplement_prix: number;
+}
+
+interface Pension {
+  id: number;
+  nom: string;
+  pivot?: PensionPivot;
+}
+
 interface Chambre {
   id: number;
   type: string;
@@ -20,6 +30,7 @@ interface Chambre {
   capacite_adultes: number;
   capacite_enfants: number;
   quantite: number;
+  pensions?: Pension[];
 }
 
 export default function EditHotelPage() {
@@ -28,11 +39,12 @@ export default function EditHotelPage() {
   const id = params.id as string;
 
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [allPensions, setAllPensions]   = useState<Pension[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
-  const [chambres, setChambres] = useState<Chambre[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [submitting, setSubmitting]     = useState(false);
+  const [errors, setErrors]             = useState<Record<string, string[]>>({});
+  const [chambres, setChambres]         = useState<Chambre[]>([]);
   const [savingChambreId, setSavingChambreId] = useState<number | null>(null);
 
   const [form, setForm] = useState({
@@ -42,7 +54,6 @@ export default function EditHotelPage() {
     etoiles: "3",
     description: "",
     disponible: true,
-    // ⬇️ NOUVEAU : tarification enfants
     age_max_bebe: "2",
     age_max_enfant: "12",
     supplement_enfant: "30",
@@ -55,9 +66,11 @@ export default function EditHotelPage() {
       fetch(`${API}/destinations`).then((r) => r.json()),
       fetch(`${API}/hotels/${id}`).then((r) => r.json()),
       fetch(`${API}/hotels/${id}/chambres`).then((r) => r.json()),
-    ]).then(([destData, hotelData, chambresData]) => {
+      fetch(`${API}/pensions`).then((r) => r.json()),
+    ]).then(([destData, hotelData, chambresData, pensionsData]) => {
       setDestinations(destData);
       setChambres(chambresData);
+      setAllPensions(Array.isArray(pensionsData) ? pensionsData : []);
       setForm({
         destination_id: String(hotelData.destination_id ?? ""),
         nom: hotelData.nom ?? "",
@@ -65,8 +78,6 @@ export default function EditHotelPage() {
         etoiles: String(hotelData.etoiles ?? "3"),
         description: hotelData.description ?? "",
         disponible: !!hotelData.disponible,
-        // ⬇️ NOUVEAU : on retombe sur des valeurs par défaut si l'hôtel a été
-        // créé avant l'ajout de ces colonnes (colonnes nullable en base)
         age_max_bebe: String(hotelData.age_max_bebe ?? "2"),
         age_max_enfant: String(hotelData.age_max_enfant ?? "12"),
         supplement_enfant: String(hotelData.supplement_enfant ?? "30"),
@@ -96,14 +107,13 @@ export default function EditHotelPage() {
 
     const token = localStorage.getItem("token");
     const formData = new FormData();
-    formData.append("_method", "PUT"); // ⚠️ Laravel a besoin de ça pour FormData + PUT
+    formData.append("_method", "PUT");
     formData.append("destination_id", form.destination_id);
     formData.append("nom", form.nom);
     formData.append("prix_par_nuit", form.prix_par_nuit);
     formData.append("etoiles", form.etoiles);
     formData.append("description", form.description);
     formData.append("disponible", form.disponible ? "1" : "0");
-    // ⬇️ NOUVEAU : envoi des champs de tarification enfants
     formData.append("age_max_bebe", form.age_max_bebe);
     formData.append("age_max_enfant", form.age_max_enfant);
     formData.append("supplement_enfant", form.supplement_enfant);
@@ -112,7 +122,7 @@ export default function EditHotelPage() {
 
     try {
       const res = await fetch(`${API}/hotels/${id}`, {
-        method: "POST", // POST + _method=PUT (override Laravel)
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
@@ -138,12 +148,37 @@ export default function EditHotelPage() {
     );
   };
 
+  const handlePensionSupplementChange = (chambreId: number, pensionId: number, supplement: number) => {
+    setChambres((prev) =>
+      prev.map((ch) => {
+        if (ch.id !== chambreId) return ch;
+        const currentPensions = ch.pensions ? [...ch.pensions] : [];
+        const existingIdx = currentPensions.findIndex((p) => p.id === pensionId);
+        if (existingIdx >= 0) {
+          currentPensions[existingIdx] = {
+            ...currentPensions[existingIdx],
+            pivot: { supplement_prix: supplement },
+          };
+        } else {
+          const pensionInfo = allPensions.find((p) => p.id === pensionId);
+          currentPensions.push({
+            id: pensionId,
+            nom: pensionInfo?.nom || "",
+            pivot: { supplement_prix: supplement },
+          });
+        }
+        return { ...ch, pensions: currentPensions };
+      })
+    );
+  };
+
   const handleSaveChambre = async (chambre: Chambre) => {
     setSavingChambreId(chambre.id);
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API}/chambres/${chambre.id}`, {
-        method: "POST", // Method spoofing for PUT
+      // 1. Mettre à jour la chambre (prix de base & quantité)
+      const resChambre = await fetch(`${API}/chambres/${chambre.id}`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -154,11 +189,38 @@ export default function EditHotelPage() {
           nom: chambre.nom,
         }),
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Erreur serveur: ${res.status} - ${errText}`);
+
+      if (!resChambre.ok) {
+        const errText = await resChambre.text();
+        throw new Error(`Erreur chambre: ${resChambre.status} - ${errText}`);
       }
-      alert(`Chambre "${chambre.nom}" mise à jour avec succès.`);
+
+      // 2. Synchroniser les prix des pensions si des pensions existent
+      if (allPensions.length > 0) {
+        const pensionsPayload = allPensions.map((p) => {
+          const found = chambre.pensions?.find((cp) => cp.id === p.id);
+          return {
+            id: p.id,
+            supplement_prix: found?.pivot?.supplement_prix ?? 0,
+          };
+        });
+
+        const resPensions = await fetch(`${API}/chambres/${chambre.id}/pensions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ pensions: pensionsPayload }),
+        });
+
+        if (!resPensions.ok) {
+          const errText = await resPensions.text();
+          throw new Error(`Erreur pensions: ${resPensions.status} - ${errText}`);
+        }
+      }
+
+      alert(`Chambre "${chambre.nom}" et suppléments de pension enregistrés avec succès !`);
     } catch (err: any) {
       console.error(err);
       alert(err.message || "Erreur réseau ou serveur.");
@@ -390,66 +452,116 @@ export default function EditHotelPage() {
       </form>
 
       {/* ══════════════════════════════════════════════════════════════
-          ⬇️ GESTION DES CHAMBRES
+          ⬇️ GESTION DES CHAMBRES ET SUPPLÉMENTS PENSIONS
           ══════════════════════════════════════════════════════════════ */}
       <div className="bg-white rounded-2xl shadow-md p-8 mt-8">
-        <h2 className="text-xl font-bold text-[#1a1a2e] mb-4">Gestion des Chambres (Prix & Quantité)</h2>
+        <h2 className="text-xl font-bold text-[#1a1a2e] mb-2">Gestion des Chambres (Prix & Pensions)</h2>
         <p className="text-sm text-gray-500 mb-6">
-          Modifiez ici manuellement les prix de base pour chaque chambre. Ces prix sont désormais indépendants du prix de l'hôtel.
+          Modifiez ici manuellement les prix de base et les suppléments pour chaque formule de pension (par nuit et par chambre).
         </p>
-        
+
         {chambres.length === 0 ? (
           <p className="text-gray-400">Aucune chambre trouvée pour cet hôtel.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600">Type / Nom</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600 w-32">Prix de base (DT)</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600 w-24">Quantité</th>
-                  <th className="py-3 px-4 text-sm font-semibold text-gray-600 w-32">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {chambres.map((chambre) => (
-                  <tr key={chambre.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-gray-800">{chambre.nom}</div>
-                      <div className="text-xs text-gray-500 mt-1 capitalize">{chambre.type} • {chambre.capacite_adultes} Ad. / {chambre.capacite_enfants} Enf.</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <input
-                        type="number"
-                        min="0"
-                        value={chambre.prix_base_nuit}
-                        onChange={(e) => handleChambreChange(chambre.id, "prix_base_nuit", parseInt(e.target.value) || 0)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
-                      />
-                    </td>
-                    <td className="py-3 px-4">
-                      <input
-                        type="number"
-                        min="0"
-                        value={chambre.quantite}
-                        onChange={(e) => handleChambreChange(chambre.id, "quantite", parseInt(e.target.value) || 0)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
-                      />
-                    </td>
-                    <td className="py-3 px-4">
-                      <button
-                        type="button"
-                        onClick={() => handleSaveChambre(chambre)}
-                        disabled={savingChambreId === chambre.id}
-                        className="bg-[#1a1a2e] hover:bg-[#2a2a4e] text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all disabled:opacity-50"
-                      >
-                        {savingChambreId === chambre.id ? "..." : "Enregistrer"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-6">
+            {chambres.map((chambre) => (
+              <div
+                key={chambre.id}
+                className="border border-gray-200 rounded-xl p-5 bg-gray-50/50 hover:bg-white hover:shadow-sm transition-all"
+              >
+                {/* Ligne principale : Informations & Prix de base */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center mb-4 pb-4 border-b border-gray-200">
+                  <div className="md:col-span-2">
+                    <div className="font-bold text-gray-800 text-base">{chambre.nom}</div>
+                    <div className="text-xs text-gray-500 mt-0.5 capitalize">
+                      {chambre.type} • {chambre.capacite_adultes} Ad. / {chambre.capacite_enfants} Enf.
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                      Prix de base (DT/nuit)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={chambre.prix_base_nuit}
+                      onChange={(e) =>
+                        handleChambreChange(chambre.id, "prix_base_nuit", parseInt(e.target.value) || 0)
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                      Quantité dispo
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={chambre.quantite}
+                      onChange={(e) =>
+                        handleChambreChange(chambre.id, "quantite", parseInt(e.target.value) || 0)
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#e91e8c]"
+                    />
+                  </div>
+                </div>
+
+                {/* Section : Suppléments par Pension */}
+                {allPensions.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      🍽️ Suppléments de pension (DT / nuit)
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                      {allPensions.map((pension) => {
+                        const currentP = chambre.pensions?.find((cp) => cp.id === pension.id);
+                        const supplementPrix = currentP?.pivot?.supplement_prix ?? 0;
+
+                        return (
+                          <div key={pension.id} className="bg-white border border-gray-200 rounded-lg p-2.5">
+                            <label className="block text-[11px] font-semibold text-gray-600 truncate mb-1" title={pension.nom}>
+                              {pension.nom}
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={supplementPrix}
+                                onChange={(e) =>
+                                  handlePensionSupplementChange(
+                                    chambre.id,
+                                    pension.id,
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs pr-7 text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#e91e8c]"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">DT</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bouton d'enregistrement pour la chambre */}
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSaveChambre(chambre)}
+                    disabled={savingChambreId === chambre.id}
+                    className="bg-[#1a1a2e] hover:bg-[#2a2a4e] text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {savingChambreId === chambre.id ? "Enregistrement..." : "💾 Enregistrer la chambre & pensions"}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
