@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SearchBoxAdvanced from "@/components/SearchBoxAdvanced";
+import HeartButton from "@/components/HeartButton";
 import Link from "next/link";
 
 interface Destination {
@@ -199,6 +200,10 @@ export default async function Home() {
                       alt={hotel.nom}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
+                    {/* ❤️ Bouton Favori */}
+                    <div className="absolute top-3 right-3">
+                      <HeartButton hotelId={hotel.id} size="sm" />
+                    </div>
                   </div>
                 </Link>
               ))

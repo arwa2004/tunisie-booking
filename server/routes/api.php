@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ChambreController;
 use App\Http\Controllers\Api\PensionController;
 use App\Http\Controllers\Api\AvisController;
+use App\Http\Controllers\Api\FavoriController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +69,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/reservations', [ReservationController::class, 'store']);
     Route::get('/mes-reservations', [ReservationController::class, 'mesReservations']);
+
+    // Favoris
+    Route::get('/favoris', [FavoriController::class, 'index']);
+    Route::get('/favoris/ids', [FavoriController::class, 'ids']);
+    Route::post('/favoris/{hotel}', [FavoriController::class, 'toggle']);
 
     // Avis (création/suppression pour utilisateurs connectés)
     Route::post('/hotels/{hotel}/avis', [AvisController::class, 'store']);

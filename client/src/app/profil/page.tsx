@@ -242,12 +242,18 @@ export default function ProfilPage() {
             {user.role === "admin" ? "🛡️ Administrateur" : "👤 Client"}
           </span>
 
-          <div className="w-full border-t border-gray-100 pt-8">
+          <div className="w-full border-t border-gray-100 pt-8 space-y-3">
             <Link
               href="/reservations"
-              className="w-full justify-center inline-flex items-center gap-2 bg-[#1a1a2e] text-white font-bold text-sm py-4 rounded-2xl hover:bg-black transition-all active:scale-[0.98]"
+              className="w-full justify-center inline-flex items-center gap-2 bg-[#1a1a2e] text-white font-bold text-sm py-3.5 rounded-2xl hover:bg-black transition-all active:scale-[0.98]"
             >
               📋 Voir mes réservations
+            </Link>
+            <Link
+              href="/favoris"
+              className="w-full justify-center inline-flex items-center gap-2 bg-[#e91e8c]/10 text-[#e91e8c] font-bold text-sm py-3.5 rounded-2xl hover:bg-[#e91e8c]/20 transition-all active:scale-[0.98]"
+            >
+              ❤️ Mes favoris
             </Link>
           </div>
         </div>

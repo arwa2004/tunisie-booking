@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HotelsFilterForm from "@/components/HotelsFilterForm";
+import HeartButton from "@/components/HeartButton";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -101,6 +102,10 @@ export default async function HotelsPage({ searchParams }: PageProps) {
                       alt={hotel.nom}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
+                    {/* ❤️ Bouton Favori */}
+                    <div className="absolute top-3 right-3">
+                      <HeartButton hotelId={hotel.id} size="sm" />
+                    </div>
                   </div>
                   <div className="p-6 flex flex-col flex-grow">
                     <div className="text-yellow-400 text-sm mb-2">

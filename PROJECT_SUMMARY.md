@@ -1,281 +1,133 @@
-# 📚 Résumé Complet du Projet - TunisieBooking
+# 📌 RÉCAPITULATIF DE PROJET - TUNISIEBOOKING
 
-Ce document sert de référence technique et de guide de démarrage pour vous permettre de travailler en toute autonomie sur le projet **TunisieBooking** en dehors de l'environnement Antigravity.
-
----
-
-## 🏛️ 1. Architecture Globale
-
-Le projet est structuré selon un modèle **Découplé (Client/Serveur)** :
-
-```
-┌─────────────────────────────────┐          JSON REST API          ┌─────────────────────────────────┐
-│     Client Next.js (React)      │ ──────────────────────────────> │      Serveur Laravel (API)      │
-│  (Port 3000 par défaut / Client) │ <────────────────────────────── │   (Port 8000 par défaut / DB)   │
-└─────────────────────────────────┘      Sanctum Tokens / Auth      └─────────────────────────────────┘
-```
-
-- **Back-end (Laravel 11 / PHP 8.2+)** : Agit comme une API REST pure. Il gère l'accès aux données (MySQL), applique les règles métier, valide l'authentification et exécute les tests unitaires.
-- **Front-end (Next.js 14+ / App Router)** : Fournit l'interface utilisateur moderne (React/TailwindCSS). Il interagit avec l'API pour afficher les offres, gérer les réservations et administrer le site.
-- **Authentification Hybride** : Gérée sur le serveur par **Laravel Breeze** & **Sanctum** (avec support **Socialite** pour Google OAuth) et sur le client par **NextAuth.js** (sécurisation par Cookies HTTP-Only et JWT).
+> **Note pour l'IA suivante / Rapport de Projet**  
+> Ce document décrit l'ensemble de l'architecture, de la base de données, de la logique métier, des webhooks d'automatisation n8n et des fonctionnalités développées sur le projet **TunisieBooking** depuis la création des données jusqu'à présent.
 
 ---
 
-## 📁 2. Structure du Projet (Workspace)
+## 1. 🛠️ TECH-STACK & ARCHITECTURE GLOBALE
 
-```
-stage20252026/
-├── client/                      # --- FRONT-END NEXT.JS ---
-│   ├── src/
-│   │   ├── app/                 # Pages (App Router)
-│   │   │   ├── admin/           # Dashboard et interfaces CRUD Admin
-│   │   │   ├── api/auth/        # Configuration NextAuth.js
-│   │   │   ├── destinations/    # Liste et détails des destinations
-│   │   │   ├── hotels/          # Liste, filtres et détails des hôtels
-│   │   │   ├── voyages/         # Liste et détails des voyages organisés
-│   │   │   ├── login/           # Page de connexion
-│   │   │   ├── register/        # Page d'inscription
-│   │   │   ├── profil/          # Gestion du profil client
-│   │   │   └── reservations/    # Liste des réservations client
-│   │   ├── components/          # Composants réutilisables (Navbar, Footer, SearchBox...)
-│   │   └── lib/                 # Utilitaires (utils.ts)
-│   ├── package.json             # Dépendances Node.js (Next, React, Next-Auth)
-│   └── tsconfig.json            # Configuration TypeScript
-│
-├── server/                      # --- BACK-END LARAVEL ---
-│   ├── app/
-│   │   ├── Console/Commands/    # Commandes Artisan d'import de données externes
-│   │   ├── Http/Controllers/Api/# Contrôleurs API REST (Auth, Hôtels, Voyages...)
-│   │   ├── Http/Controllers/Auth/# Contrôleurs Laravel Breeze (Login, Register, Mails)
-│   │   └── Models/              # Modèles Eloquent & Règles métier (Reservation, Hotel, User...)
-│   ├── config/                  # Configuration du serveur (Services, Auth, Database)
-│   ├── database/
-│   │   ├── migrations/          # Structure de la base de données MySQL
-│   │   └── seeders/             # Données de démonstration (Seeders)
-│   ├── routes/
-│   │   ├── api.php              # Définition des routes de l'API REST
-│   │   └── web.php              # Routes web basiques
-│   ├── tests/
-│   │   └── Unit/                # Tests unitaires rapides (sans base de données)
-│   ├── composer.json            # Dépendances PHP (Laravel, Breeze, Socialite, Sanctum)
-│   └── phpunit.xml              # Configuration de la suite de tests PHPUnit
-│
-└── PROJECT_SUMMARY.md           # Ce fichier de référence
-```
+- **Backend (API REST)** : Laravel 11 / PHP 8.2+
+- **Base de Données** : MySQL / SQLite (avec migrations Laravel)
+- **Authentification** : Laravel Sanctum (Tokens Bearer)
+- **Frontend** : Next.js 16 (App Router, TypeScript, Vanilla CSS + Tailwind CSS)
+- **Automatisation & Emails** : n8n (Webhooks HTTP + Nœud Gmail API)
+- **Tests & Assurance Qualité** : PHPUnit (78 tests automatisés 100% PASS)
 
 ---
 
-## 🗄️ 3. Base de Données (Modèles & Relations)
+## 2. 🗄️ BASE DE DONNÉES & MODÈLES (13 MODÈLES)
 
-Le schéma relationnel MySQL contient les tables et modèles Eloquent suivants :
+### 🔹 Core & Authentification
+1. **`users`** :
+   - Champs : `id`, `nom`, `prenom`, `email`, `password`, `telephone`, `photo`, `role` (`client` ou `admin`), `timestamps`.
+   - Fonctionnalités : Inscription, connexion, édition profil, upload photo, changement mot de passe, rôles.
 
-### 3.1 Liste des Modèles et Tables
-
-1. **`User`** (`users`) : Gère les comptes.
-   - *Champs* : `id`, `nom`, `prenom`, `email`, `telephone`, `role` (admin/client), `photo` (URL de l'avatar), `password`, `email_verified_at`, `remember_token`.
-   - *Relations* : `hasMany(Reservation)`.
-2. **`Destination`** (`destinations`) : Régions phares (Hammamet, Djerba, etc.).
-   - *Champs* : `id`, `nom`, `region`, `image` (URL).
-   - *Relations* : `hasMany(Hotel)`.
-3. **`Hotel`** (`hotels`) : Hôtels disponibles pour réservation.
-   - *Champs* : `id`, `destination_id`, `nom`, `description`, `adresse`, `etoiles` (1 à 5), `prix_base`, `image` (URL principale).
-   - *Relations* : `belongsTo(Destination)`, `hasMany(Chambre)`, `hasMany(HotelPhoto)`, `belongsToMany(Service)`.
-4. **`Chambre`** (`chambres`) : Types de chambres pour chaque hôtel.
-   - *Champs* : `id`, `hotel_id`, `type` (single, double, triple, suite), `description`, `prix_supplement` (ajouté au prix de base), `capacite` (max adultes).
-   - *Relations* : `belongsTo(Hotel)`.
-5. **`Pension`** (`pensions`) : Options de repas.
-   - *Champs* : `id`, `type` (Logement Simple, Petit Déjeuner, Demi-Pension, Pension Complète, All Inclusive), `description`.
-   - *Relations* : `belongsToMany(Chambre)`.
-6. **`Service`** (`services`) : Équipements de l'hôtel (Wifi, Piscine, Spa, etc.).
-   - *Champs* : `id`, `nom`, `icone` (nom de classe ou SVG).
-   - *Relations* : `belongsToMany(Hotel)`.
-7. **`HotelPhoto`** (`hotel_photos`) : Galerie de photos secondaires.
-   - *Champs* : `id`, `hotel_id`, `url_photo`.
-   - *Relations* : `belongsTo(Hotel)`.
-8. **`Voyage`** (`voyages`) : Voyages organisés à l'étranger.
-   - *Champs* : `id`, `nom`, `pays`, `description`, `prix`, `image`, `date_depart`, `date_retour`.
-   - *Relations* : `hasMany(Reservation)`.
-9. **`Reservation`** (`reservations`) : Réservations de type "Hotel" ou "Voyage".
-   - *Champs* : `id`, `user_id`, `hotel_id` (null si voyage), `chambre_id` (null si voyage), `pension_id` (null si voyage), `voyage_id` (null si hôtel), `type_reservation` (hotel/voyage), `date_debut`, `date_fin`, `nb_chambres`, `nb_adultes`, `nb_enfants`, `prix_total`, `statut` (en_attente, confirmee, annulee), `telephone`, `email_contact`, `nom_contact`, `prenom_contact`.
-   - *Relations* : `belongsTo(User)`, `belongsTo(Hotel)`, `belongsTo(Chambre)`, `belongsTo(Pension)`, `belongsTo(Voyage)`.
+2. **`personal_access_tokens`** : Gestion des jetons d'accès API Sanctum.
 
 ---
 
-## 🛣️ 4. API Endpoints (`server/routes/api.php`)
+### 🔹 Offres & Hébergement
+3. **`destinations`** :
+   - Champs : `id`, `nom`, `region`, `image`, `timestamps`.
+   - Exemples : Hammamet, Sousse, Djerba, Monastir, Tabarka, etc.
 
-L'API est structurée en 3 niveaux d'accès :
+4. **`hotels`** :
+   - Champs : `id`, `nom`, `description`, `etoiles` (1 à 5), `prix_par_nuit` (prix de base), `destination_id`, `image`, `tarification_enfants` (JSON/champs d'âge), `timestamps`.
+   - Relations : `belongsTo(Destination)`, `hasMany(Chambre)`, `belongsToMany(Service)`, `hasMany(HotelPhoto)`, `hasMany(Avis)`.
 
-### 4.1 Routes Publiques
-- **Authentification** :
-  - `POST /api/register` : Créer un compte client (Throttled: 3 tentatives/min).
-  - `POST /api/login` : Se connecter et générer un token Sanctum (Throttled: 5 tentatives/min).
-  - `POST /api/forgot-password` : Envoyer un e-mail de réinitialisation.
-  - `POST /api/reset-password` : Enregistrer un nouveau mot de passe.
-  - `POST /api/auth/social` : Login social OAuth via Google (Socialite).
-- **Consultation** :
-  - `GET /api/destinations` & `GET /api/destinations/{id}`
-  - `GET /api/hotels` & `GET /api/hotels/{id}` (supporte le filtrage par `destination_id`, `etoiles`, `prix_max`).
-  - `GET /api/voyages` & `GET /api/voyages/{id}`
+5. **`chambres`** :
+   - Champs : `id`, `hotel_id`, `type`, `nom` (ex: Chambre Double Vue Mer), `prix_base_nuit`, `capacite_adultes`, `capacite_enfants`, `quantite` (stock disponible), `remise`, `timestamps`.
 
-### 4.2 Routes Protégées (Middleware `auth:sanctum`)
-Accessibles à tout utilisateur connecté :
-- `GET /api/me` : Obtenir les infos du profil connecté.
-- `PUT /api/me` : Modifier les informations personnelles (nom, prenom, telephone).
-- `PUT /api/me/password` : Modifier le mot de passe actuel.
-- `POST /api/me/photo` : Mettre à jour l'avatar/photo de profil.
-- `POST /api/logout` : Supprimer le token d'accès actuel.
-- `POST /api/reservations` : Créer une réservation (Hôtel ou Voyage).
-- `GET /api/mes-reservations` : Consulter ses propres réservations.
+6. **`pensions`** :
+   - Champs : `id`, `nom` (`Logement Seul`, `Petit Déjeuner`, `Demi-Pension`, `Pension Complète`, `All Inclusive`), `timestamps`.
 
-### 4.3 Routes Administrateur (Middlewares `auth:sanctum` + `admin`)
-Permissions complètes sur les ressources (CRUD) :
-- **Destinations** : `POST /api/destinations`, `POST /api/destinations/{id}` (mise à jour/upload), `DELETE /api/destinations/{id}`
-- **Hôtels** : `POST /api/hotels`, `POST /api/hotels/{id}`, `DELETE /api/hotels/{id}`
-- **Voyages** : `POST /api/voyages`, `POST /api/voyages/{id}`, `DELETE /api/voyages/{id}`
-- **Réservations** : `GET /api/reservations` (toutes les réservations), `GET /api/reservations/{id}`, `PUT /api/reservations/{id}`, `DELETE /api/reservations/{id}`
-- **Utilisateurs** : `GET /api/users`, `GET /api/users/{id}`, `PUT /api/users/{id}/role`, `DELETE /api/users/{id}`
+7. **`chambre_pension` (Table Pivot avec Prix)** :
+   - Champs : `chambre_id`, `pension_id`, `supplement_prix` (Prix du supplément en DT / nuit pour cette chambre spécifique).
+
+8. **`services` & `hotel_service`** :
+   - Équipements de l'hôtel : Wifi, Piscine, Spa, Plage privée, Parking, Restaurant, etc.
+
+9. **`hotel_photos`** :
+   - Galerie photo secondaire pour chaque hôtel.
 
 ---
 
-## 🔐 5. Architecture d'Authentification (Breeze + NextAuth.js)
-
-L'intégration de la sécurité se fait par pont entre Laravel Breeze et NextAuth.js :
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client as Navigateur
-    participant FE as Next.js (NextAuth)
-    participant BE as Laravel API (Breeze)
-
-    Client->>FE: Clique sur Connexion (ou Google Login)
-    FE->>BE: POST /api/login (ou /api/auth/social)
-    Note over BE: Validation & génération du token d'accès Sanctum
-    BE-->>FE: JSON { user: {...}, token: "sanctum_plain_text_token" }
-    Note over FE: Stockage sécurisé du token dans le JWT chiffré NextAuth
-    FE-->>Client: Écrit un cookie de session HTTP-Only sécurisé
-```
-
-### Points clés :
-- **Token Sanctum** : Retourné sous forme de chaîne de caractères lors du login, stocké côté serveur Next.js dans la session cryptée, et injecté dans les en-têtes d'autorisation HTTP (`Authorization: Bearer <token>`) à chaque requête vers le back-end.
-- **Rôles utilisateurs** : Le rôle (`client` ou `admin`) est présent dans le token JWT de NextAuth. Le fichier `client/src/app/admin/layout.tsx` l'intercepte côté serveur de Next pour bloquer les utilisateurs non autorisés avant même de charger la page.
+### 🔹 Voyages à l'étranger
+10. **`voyages`** :
+    - Champs : `id`, `nom`, `pays`, `description`, `prix`, `duree_jours`, `image`, `timestamps`.
 
 ---
 
-## 💻 6. Interface Frontend Next.js
+### 🔹 Réservations, Avis & Favoris
+11. **`reservations`** :
+    - Champs : `id`, `user_id`, `hotel_id`, `chambre_id`, `pension_id`, `date_arrivee`, `date_depart`, `nb_adultes`, `nb_enfants`, `ages_enfants` (JSON ex: `[4, 8]`), `quantite_chambres`, `prix_total` (calculé automatiquement), `statut` (`en attente`, `confirmee`, `annulee`), `timestamps`.
 
-Le dossier `client/` implémente les interfaces clés suivantes :
+12. **`avis`** :
+    - Champs : `id`, `user_id`, `hotel_id`, `note` (1 à 5), `commentaire`, `timestamps`.
 
-### 6.1 Espace Client & Pages Publiques
-- **Home (`src/app/page.tsx`)** : Barre de recherche avancée (`SearchBoxAdvanced`), grille des destinations populaires et slider des voyages organisés.
-- **Filtres Hôtels (`src/app/hotels/page.tsx`)** : Formulaire interactif (`HotelsFilterForm`) de recherche par prix, étoiles et destination avec rendu en temps réel.
-- **Tunnel de réservation** : Pages de détails affichant les formulaires de calcul dynamique des nuits, choix des chambres et options de pension.
-- **Profil (`src/app/profil/page.tsx`)** : Modification des coordonnées et téléchargement direct de l'avatar.
-- **Mes Réservations (`src/app/reservations/page.tsx`)** : Historique et statuts des commandes client.
-
-### 6.2 Espace Administration (`src/app/admin/`)
-Protégé par rôle, il intègre un dashboard affichant les statistiques globales ainsi que des tableaux de gestion CRUD interactifs :
-- `/admin/destinations` : Création et modification de destinations (avec gestion d'upload de fichiers).
-- `/admin/hotels` : Gestion des hôtels, attribution des chambres et des services.
-- `/admin/voyages` : Publication et modification des voyages.
-- `/admin/reservations` : Suivi global des réservations et validation des statuts (`confirmee` / `annulee`).
-- `/admin/users` : Gestion des comptes et attribution du rôle `admin`.
+13. **`favoris` (Système de Cœur ❤️)** :
+    - Champs : `id`, `user_id`, `hotel_id`, `timestamps` (Contrainte unique `user_id` + `hotel_id`).
 
 ---
 
-## 🧪 7. Logique Métier & Tests Unitaires
+## 3. ⚙️ LOGIQUE MÉTIER & CALCUL DES PRIX DE RÉSERVATION
 
-### 7.1 Règles Métier majeures (`server/app/Models/Reservation.php`)
-- **Calcul du nombre de nuits** :
-  ```php
-  public function getNbNuits(): int {
-      $debut = new \DateTime($this->date_debut);
-      $fin = new \DateTime($this->date_fin);
-      $diff = $debut->diff($fin);
-      return $diff->invert ? 0 : $diff->days;
-  }
-  ```
-- **Calcul automatique du prix total** :
-  ```php
-  public function calculatePrixTotal(float $prixParNuit): float {
-      return $prixParNuit * $this->getNbNuits() * ($this->nb_chambres ?? 1);
-  }
-  ```
-- **Cycle de vie d'une réservation** (Transitions d'états autorisées) :
-  - États valides : `en_attente`, `confirmee`, `annulee`.
-  - Règle de transition : Une réservation au statut `annulee` ne peut plus être modifiée (état terminal).
+Le calcul du `prix_total` lors d'une réservation respecte la règle suivante :
+$$\text{Prix Total} = \Big[ \big(\text{Prix Base Chambre} + \text{Supplément Pension Chambre}\big) \times \text{Quantité Chambres} + \text{Supplément Enfants selon Âge} \Big] \times \text{Nombre de Nuits}$$
 
-### 7.2 Tests PHPUnit (`server/tests/Unit/`)
-Les tests sont écrits sous forme de **tests unitaires purs (sans base de données)** pour s'exécuter instantanément (~1 seconde pour la totalité des tests). Ils utilisent `setRawAttributes()` pour instancier des modèles en mémoire :
-```php
-private function makeReservation(array $attributs): Reservation {
-    $reservation = new Reservation();
-    $reservation->setRawAttributes($attributs);
-    return $reservation;
-}
-```
+1. **Vérification de Disponibilité** : Décrémentation automatique de `chambres.quantite` lors de la création d'une réservation.
+2. **Remboursement de Stock** : Restitution de `chambres.quantite` en cas d'annulation ou de suppression administrative de la réservation.
 
 ---
 
-## 🛠️ 8. Commandes et Instructions pour travailler en dehors d'Antigravity
+## 4. 🤖 AUTOMATISATION N8N & NOTIFICATIONS GMAIL
 
-Pour lancer et développer sur l'application en local :
+L'application communique en temps réel avec des Workflows n8n via des Webhooks HTTP POST :
 
-### 8.1 Configuration Initiale
+### 📬 Workflow 1 : Nouvelle Réservation (`POST /webhook/nouvelle-reservation`)
+- **Déclencheur** : Lorsqu'un client crée une réservation.
+- **Payload** : Données du client (nom, email, téléphone), de l'hôtel, dates, chambre, pension et prix total.
+- **Action n8n** : Envoi automatique d'un email de confirmation au client via le nœud Gmail n8n.
 
-1. **Back-end (Laravel)** :
-   ```bash
-   cd server
-   cp .env.example .env
-   composer install
-   php artisan key:generate
-   ```
-   *Configurez vos accès DB MySQL dans le fichier `.env` (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).*
+### 📬 Workflow 2 : Modification du Statut ou Suppression (`POST /webhook/statut-reservation`)
+- **Déclencheur** : Lorsqu'un administrateur **Confirme**, **Annule** ou **Supprime** une réservation.
+- **Payload** : `action` (`"confirmation"`, `"annulation"`, `"suppression"`), email du client, nom du client, nom de l'hôtel, dates et prix.
+- **Action n8n** : Envoi d'un email d'information personnalisé au client informant du nouvel état de sa réservation.
 
-2. **Front-end (Next.js)** :
-   ```bash
-   cd client
-   cp .env.local.example .env.local  # si existant, ou créez-en un
-   npm install
-   ```
+---
 
-### 8.2 Base de données & Alimentation
+## 5. 💻 COMPOSANTS FRONTEND & EXPÉRIENCE UTILISATEUR (NEXT.JS)
 
-1. **Exécuter les migrations et injecter les données de test** :
-   ```bash
-   cd server
-   php artisan migrate:fresh --seed
-   ```
-   *Crée les tables et injecte les utilisateurs par défaut (dont l'administrateur `admin@tunisiebooking.com` / `password`).*
+### 👤 Espace Client :
+- **Page d'Accueil (`/`)** : Moteur de recherche avancé (Destination, Dates, Personnes), cartes d'hôtels "Nos Bons Plans" avec bouton Favori ❤️.
+- **Page Hôtels (`/hotels`)** : Filtres interactifs par destination, étoiles, budget et recherche textuelle.
+- **Fiche Hôtel (`/hotels/[id]`)** : Galerie photo, avis des clients, détails des chambres & pensions, calculateur dynamique de prix en temps réel et réservation.
+- **Espace Profil (`/profil`)** : Gestion des informations personnelles, modification du mot de passe et upload de photo de profil.
+- **Mes Réservations (`/reservations`)** : Liste des réservations passées et en cours avec badges de statut (`en attente`, `confirmée`, `annulée`).
+- **Mes Favoris (`/favoris`)** : Page dédiée regroupant tous les hôtels mis en favori par l'utilisateur.
 
-2. **Lancer les commandes Artisan de collecte/scrapie de données** :
-   ```bash
-   php artisan app:fetch-hotels   # Importe les hôtels en DB
-   php artisan app:fetch-voyages  # Importe les voyages organisés en DB
-   ```
+### 🛡️ Espace Administration (`/admin`) :
+- **Dashboard** : Statistiques globales (Total réservations, revenus, hôtels, utilisateurs).
+- **Gestion des Hôtels (`/admin/hotels`)** :
+  - Création/Modification d'hôtels.
+  - **Éditeur de Chambres et Suppléments de Pension** : Permet de définir pour chaque chambre de l'hôtel le prix de base, la quantité disponible et le tarif de chaque supplément de pension (Petit Déjeuner, Demi-Pension, Pension Complète, All Inclusive).
+- **Gestion des Réservations (`/admin/reservations`)** : Validation (Confirmation), Annulation ou Suppression avec déclenchement automatique du Webhook n8n.
+- **Système de Notifications Toast** : Remplacement des fenêtres pop-up grises `alert()` du navigateur par des bannières Toast professionnelles animées en bas à droite (Vert pour succès, Rouge pour erreur).
 
-### 8.3 Lancement des Serveurs
+---
 
-Dans deux terminaux séparés :
-- **Lancer le Back-end** (Port `8000`) :
-  ```bash
-  cd server
-  php artisan serve
-  ```
-- **Lancer le Front-end** (Port `3000`) :
-  ```bash
-  cd client
-  npm run dev
-  ```
+## 6. 🧪 SUITE DE TESTS AUTOMATISÉS (PHPUNIT)
 
-### 8.4 Exécuter la suite de tests
+- **Total Tests** : 78 tests unitaires et de fonctionnalités (**78 Passed**, 0 Failed).
+- **Couverture** :
+  - `AuthTest` (Inscription, connexion, mot de passe, tokens)
+  - `HotelApiTest` & `ChambreApiTest` (Recherche, filtres, stock)
+  - `ReservationApiTest` & `ReservationAdminTest` (Calculs de prix, annulation, remboursements de stock, webhooks)
+  - `AvisApiTest` (Avis et notes)
+  - `FavoriApiTest` (Gestion du cœur favori, authentification, basculement toggle)
 
-Pour vérifier l'intégrité de l'application et de la logique métier :
-```bash
-cd server
-vendor/bin/phpunit
-```
-Pour lancer uniquement les tests unitaires avec un formatage clair :
-```bash
-vendor/bin/phpunit --testsuite Unit --testdox
-```
+---
+
+## 🚀 ÉTAT ACTUEL DU PROJET
+Le projet est entièrement fonctionnel, compilé sans erreur TypeScript/Next.js (`npm run build` OK), avec une base de données migrée à jour et un backend totalement testé.

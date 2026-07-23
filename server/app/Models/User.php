@@ -55,6 +55,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(Reservation::class);
     }
+
+    public function favoris()
+    {
+        return $this->hasMany(Favori::class);
+    }
+
+    public function hotelsFavoris()
+    {
+        return $this->belongsToMany(Hotel::class, 'favoris');
+    }
     public function isAdmin(): bool
     {
         return $this->role === 'admin';

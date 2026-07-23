@@ -238,6 +238,13 @@ export default function Navbar() {
                   >
                     📋 Mes réservations
                   </Link>
+                  <Link
+                    href="/favoris"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-[10px] text-sm text-gray-700 hover:bg-gray-50 hover:text-[#e91e8c] transition-colors"
+                  >
+                    ❤️ Mes favoris
+                  </Link>
 
                   <div className="border-t border-gray-100" />
 

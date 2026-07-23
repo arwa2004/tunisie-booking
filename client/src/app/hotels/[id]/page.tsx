@@ -6,6 +6,7 @@ import Link from "next/link";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { fr } from "date-fns/locale/fr";
 import "react-datepicker/dist/react-datepicker.css";
+import HeartButton from "@/components/HeartButton";
 
 registerLocale("fr", fr);
 
@@ -412,12 +413,15 @@ export default function HotelDetailPage() {
                 </p>
               )}
             </div>
-            <Link
-              href={hotel.destination ? `/destinations/${hotel.destination.id}` : "/destinations"}
-              className="text-sm text-[#e91e8c] hover:underline font-medium whitespace-nowrap hidden md:block"
-            >
-              ← Retour
-            </Link>
+            <div className="flex items-center gap-3">
+              <HeartButton hotelId={hotel.id} size="md" />
+              <Link
+                href={hotel.destination ? `/destinations/${hotel.destination.id}` : "/destinations"}
+                className="text-sm text-[#e91e8c] hover:underline font-medium whitespace-nowrap hidden md:block"
+              >
+                ← Retour
+              </Link>
+            </div>
           </div>
 
           {/* Onglets */}
