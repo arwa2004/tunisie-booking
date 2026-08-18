@@ -2,10 +2,13 @@
 set -e
 
 # -------------------------------------------------------------
-# 1. Configuration du Port Apache
+# 1. Fix MPM Apache & Configuration du Port (Railway / Render)
 # -------------------------------------------------------------
-PORT="${PORT:-10000}"
+PORT="${PORT:-8080}"
 echo "Configuration d'Apache sur le port ${PORT}..."
+a2dismod mpm_event mpm_worker 2>/dev/null || true
+a2enmod mpm_prefork 2>/dev/null || true
+
 sed -ri "s/Listen 80/Listen ${PORT}/g" /etc/apache2/ports.conf 2>/dev/null || true
 sed -ri "s/:80/:${PORT}/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
 
@@ -43,7 +46,7 @@ echo "  DB_PASSWORD = ${DB_PASSWORD:+[DEFINI]}"
 echo "================="
 
 # -------------------------------------------------------------
-# 3. Attente rapide de MySQL (max 30s)
+# 3. Attente rapide de MySQL
 # -------------------------------------------------------------
 CONNECTED=0
 if [ -n "$DB_HOST" ]; then
@@ -67,46 +70,29 @@ if [ -n "$DB_HOST" ]; then
 fi
 
 # -------------------------------------------------------------
-# 4. Migrations en FOREGROUND (rapide) + Seeding en BACKGROUND
+# 4. Migrations & Seeding sécurisé (idempotent)
 # -------------------------------------------------------------
 if [ $CONNECTED -eq 1 ]; then
     echo "Exécution des migrations..."
     php artisan migrate --force || echo "⚠️ Migrations déjà effectuées."
 
-    # Seeding EN ARRIÈRE-PLAN uniquement si la base est vide (évite les doublons)
     (
-        sleep 5  # Attendre qu'Apache soit bien lancé
-        DEST_COUNT=$(php -r "
-            try {
-                \$dsn = 'mysql:host='.getenv('DB_HOST').';port='.(getenv('DB_PORT')?:'3306').';dbname='.(getenv('DB_DATABASE')?:'railway').';charset=utf8mb4';
-                \$pdo = new PDO(\$dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
-                \$stmt = \$pdo->query('SELECT COUNT(*) FROM destinations');
-                echo \$stmt->fetchColumn();
-            } catch(\Throwable \$e) { echo '0'; }
-        " 2>/dev/null)
-
-        if [ "$DEST_COUNT" = "0" ]; then
-            echo "[SEED] Base vide — lancement du seeding..." >> /tmp/seed.log
-            php artisan db:seed --force >> /tmp/seed.log 2>&1 \
-                && echo "[SEED] ✅ Seeding terminé avec succès." >> /tmp/seed.log \
-                || echo "[SEED] ⚠️ Erreur lors du seeding." >> /tmp/seed.log
-        else
-            echo "[SEED] Base déjà alimentée ($DEST_COUNT destinations) — seeding ignoré." >> /tmp/seed.log
-        fi
+        sleep 3
+        echo "[SEED] Execution du seeding..." >> /tmp/seed.log
+        php artisan db:seed --force >> /tmp/seed.log 2>&1 \
+            && echo "[SEED] ✅ Seeding terminé." >> /tmp/seed.log \
+            || echo "[SEED] ⚠️ Données déjà présentes." >> /tmp/seed.log
     ) &
 else
     echo "⚠️ Démarrage sans BDD — vérifiez les variables DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD."
 fi
 
 # -------------------------------------------------------------
-# 5. Cache Prod
+# 5. Cache Prod & Démarrage d'Apache
 # -------------------------------------------------------------
 php artisan config:cache || true
 php artisan route:cache  || true
 php artisan view:cache   || true
 
-# -------------------------------------------------------------
-# 6. Démarrage immédiat d'Apache
-# -------------------------------------------------------------
 echo "Démarrage d'Apache sur le port ${PORT}..."
 exec apache2-foreground

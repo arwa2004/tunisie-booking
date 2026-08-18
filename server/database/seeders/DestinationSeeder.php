@@ -41,7 +41,7 @@ class DestinationSeeder extends Seeder
             ]
         ];
         foreach ($destinations as $destination) {
-            Destination::create($destination);
+            Destination::firstOrCreate(['nom' => $destination['nom']], $destination);
         }
     }
 }

@@ -11,16 +11,17 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Compte admin unique
-        DB::table('users')->insert([
-            'nom'        => 'Admin',
-            'prenom'     => 'Super',
-            'email'      => 'admin@gmail.com',
-            'telephone'  => '00000000',
-            'password'   => Hash::make('admin1234'),
-            'role'       => 'admin',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('users')->updateOrInsert(
+            ['email' => 'admin@gmail.com'],
+            [
+                'nom'        => 'Admin',
+                'prenom'     => 'Super',
+                'telephone'  => '00000000',
+                'password'   => Hash::make('admin1234'),
+                'role'       => 'admin',
+                'updated_at' => now(),
+            ]
+        );
 
         // Clients
         $users = [
@@ -32,16 +33,17 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
-            DB::table('users')->insert([
-                'nom'        => $user['nom'],
-                'prenom'     => $user['prenom'],
-                'email'      => $user['email'],
-                'telephone'  => $user['telephone'],
-                'password'   => Hash::make('password123'),
-                'role'       => 'client',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('users')->updateOrInsert(
+                ['email' => $user['email']],
+                [
+                    'nom'        => $user['nom'],
+                    'prenom'     => $user['prenom'],
+                    'telephone'  => $user['telephone'],
+                    'password'   => Hash::make('password123'),
+                    'role'       => 'client',
+                    'updated_at' => now(),
+                ]
+            );
         }
     }
 }
