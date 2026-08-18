@@ -45,7 +45,7 @@ class VoyageSeeder extends Seeder
         ];
 
         foreach ($voyages as $voyage) {
-            Voyage::create($voyage);
+            Voyage::firstOrCreate(['nom' => $voyage['nom']], $voyage);
         }
     }
 }
