@@ -12,15 +12,11 @@ client/.env
 client/node_modules/
 client/.next/
 
-# Playwright & Testing artifacts
-client/playwright-report/
-client/test-results/
-test-results/
-playwright-report/
-*.webm
-*.zip
-
 # OS
 .DS_Store
 Thumbs.db
-~$*.xlsx
+client/playwright-report/
+client/test-results/
+test-results/
+*.webm
+*.zip
