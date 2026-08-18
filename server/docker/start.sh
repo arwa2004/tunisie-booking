@@ -73,13 +73,26 @@ if [ $CONNECTED -eq 1 ]; then
     echo "Exécution des migrations..."
     php artisan migrate --force || echo "⚠️ Migrations déjà effectuées."
 
-    # Lancer le seeding EN ARRIÈRE-PLAN pour ne pas bloquer Apache
-    echo "Lancement du seeding en arrière-plan..."
+    # Seeding EN ARRIÈRE-PLAN uniquement si la base est vide (évite les doublons)
     (
         sleep 5  # Attendre qu'Apache soit bien lancé
-        php artisan db:seed --force >> /tmp/seed.log 2>&1 \
-            && echo "[SEED] ✅ Seeding terminé avec succès." >> /tmp/seed.log \
-            || echo "[SEED] ⚠️ Seeding échoué ou données déjà présentes." >> /tmp/seed.log
+        DEST_COUNT=$(php -r "
+            try {
+                \$dsn = 'mysql:host='.getenv('DB_HOST').';port='.(getenv('DB_PORT')?:'3306').';dbname='.(getenv('DB_DATABASE')?:'railway').';charset=utf8mb4';
+                \$pdo = new PDO(\$dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'));
+                \$stmt = \$pdo->query('SELECT COUNT(*) FROM destinations');
+                echo \$stmt->fetchColumn();
+            } catch(\Throwable \$e) { echo '0'; }
+        " 2>/dev/null)
+
+        if [ "$DEST_COUNT" = "0" ]; then
+            echo "[SEED] Base vide — lancement du seeding..." >> /tmp/seed.log
+            php artisan db:seed --force >> /tmp/seed.log 2>&1 \
+                && echo "[SEED] ✅ Seeding terminé avec succès." >> /tmp/seed.log \
+                || echo "[SEED] ⚠️ Erreur lors du seeding." >> /tmp/seed.log
+        else
+            echo "[SEED] Base déjà alimentée ($DEST_COUNT destinations) — seeding ignoré." >> /tmp/seed.log
+        fi
     ) &
 else
     echo "⚠️ Démarrage sans BDD — vérifiez les variables DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD."
