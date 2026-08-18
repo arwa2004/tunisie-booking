@@ -1,18 +1,75 @@
 # 🌐 TunisieBooking — Version Microservices Polyglotte
 > **Architecture Microservices Conteneurisée (Docker, Nginx Gateway, Keycloak SSO, Eureka)**  
-> **Auteur :** Arwa Ben Amar | **Organisme :** Spring Travel Services (TunisieBooking)
+> **Auteur :** Arwa Ben Amar | **Organisme d'accueil :** Spring Travel Services (TunisieBooking)
 
 ---
 
 ## 📌 Présentation
-Cette branche (`microservices`) contient la version **microservices polyglotte et distribuée** de la plateforme **TunisieBooking**.
+Cette branche (`microservices`) contient la version **microservices polyglotte, conteneurisée et distribuée** de la plateforme **TunisieBooking**.
 
-L'architecture est composée de **7 conteneurs Docker** interconnectés dans un réseau virtuel privé (`tb-network`), associant :
+L'infrastructure s'appuie sur **7 conteneurs Docker** interconnectés dans un réseau virtuel privé (`tb-network`), combinant :
 - **3 Langages Backend distincts :** PHP 8.3 Laravel 11, Java 17 Spring Boot 3, Node.js Express.
 - **3 Moteurs de BDD dédiés (Polyglot Persistence) :** MySQL 8.0, H2 Database, MongoDB 6.0.
 - **1 Serveur SSO Centralisé :** Keycloak 26 (OAuth2 / OIDC avec jetons JWT).
 - **1 API Gateway & Reverse Proxy :** Nginx (Gestion CORS avec réponses Preflight OPTIONS 204).
 - **1 Service Registry :** Netflix Eureka (Découverte dynamique des services).
+
+---
+
+## 📐 Schéma & Détail de l'Architecture Microservices
+
+### 1. Vue d'Ensemble de l'Architecture Distribuée
+```
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                             NAVIGATEUR CLIENT                               │
+ │                         Next.js 14 (Port 3000)                              │
+ └──────────────────────────────────────┬──────────────────────────────────────┘
+                                        │ Requêtes API REST JSON
+                                        │ Header Authorization: Bearer <JWT>
+                                        ▼
+ ┌─────────────────────────────────────────────────────────────────────────────┐
+ │                API GATEWAY — Nginx Reverse Proxy (Port 8000)                │
+ │  • Point d'entrée unique & Routage dynamique (/api/users, /api/hotels...)   │
+ │  • Gestion des requêtes Preflight OPTIONS (Réponse HTTP 204 No Content)     │
+ │  • Isolation réseau & Masquage des en-têtes CORS internes                   │
+ └──────────────┬───────────────────────┬───────────────────────┬──────────────┘
+                │                       │                       │
+                ▼                       ▼                       ▼
+ ┌───────────────────────────┐ ┌───────────────────┐ ┌─────────────────────────┐
+ │       user-service        │ │   hotel-service   │ │     booking-service     │
+ │  • PHP 8.3 / Laravel 11   │ │ • Java 17 / Spring│ │ • Node.js / Express     │
+ │  • Port interne : 8000    │ │ • Port int. : 8000│ │ • Port interne : 8000   │
+ │  • Gestion Utilisateurs   │ │ • Catalogue Hôtels│ │ • Réservations & Tarifs │
+ └──────────────┬────────────┘ └────────┬──────────┘ └───────────┬─────────────┘
+                │                       │                        │
+                ▼                       ▼                        ▼
+ ┌───────────────────────────┐ ┌───────────────────┐ ┌─────────────────────────┐
+ │   MySQL 8.0 (Port 3307)   │ │  H2 DB (Port 8082)│ │  MongoDB 6.0 (27017)    │
+ │   Base : user_db          │ │  Base : test.db   │ │  Base : booking_db      │
+ └───────────────────────────┘ └───────────────────┘ └─────────────────────────┘
+
+ ┌──────────────────────────────────────┐ ┌────────────────────────────────────┐
+ │ KEYCLOAK SSO — Auth Server (Port 8080)│ │ EUREKA SERVER — Registry (Port 8761)│
+ │ • Fournisseur d'identité OAuth2 / OIDC│ │ • Découverte dynamique de services │
+ └──────────────────────────────────────┘ └────────────────────────────────────┘
+```
+
+### 2. Design Patterns & Choix d'Architecture
+
+* **API Gateway Pattern (Nginx - Port 8000) :**
+  - Le frontend communique exclusivement avec le port 8000. Nginx se charge de réécrire les URLs et de router les requêtes vers le bon conteneur microservice.
+  - Résolution centralisée du **CORS** : Nginx intercepte les requêtes de test `OPTIONS` émises par les navigateurs et renvoie immédiatement un code `204 No Content` avec les en-têtes d'autorisation.
+
+* **Identity Provider & Single Sign-On (Keycloak 26 - Port 8080) :**
+  - Aucun microservice ne stocke ni ne manipule de mots de passe. Keycloak authentifie les utilisateurs et délivre un **jeton JWT crypté**.
+  - Chaque microservice vérifie la signature cryptographique du jeton de manière autonome, sans nécessiter d'appel à la base de données.
+
+* **Polyglot Persistence & Pattern Snapshot (MongoDB - Port 27017) :**
+  - **Profils & Hôtels :** Données relationnelles modifiables stockées dans MySQL (`user-service`) et H2 (`hotel-service`).
+  - **Réservations :** Une réservation est une **preuve d'achat immuable**. Le `booking-service` enregistre une photo (*Snapshot*) complète des données de l'hôtel et du tarif payé dans MongoDB. Si l'hôtel augmente ses tarifs plus tard dans la base H2, l'ancienne réservation conserve exactement le montant payé lors de l'achat.
+
+* **Service Discovery (Netflix Eureka - Port 8761) :**
+  - Annuaire dynamique où chaque microservice s'enregistre au démarrage pour signaler son état de santé (*UP* / *DOWN*).
 
 ---
 
