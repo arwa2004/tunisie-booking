@@ -94,5 +94,9 @@ php artisan config:cache || true
 php artisan route:cache  || true
 php artisan view:cache   || true
 
+# Nettoyage strict des MPMs juste avant le démarrage d'Apache
+find /etc/apache2/mods-enabled/ -name "mpm_*.load" ! -name "mpm_prefork.load" -delete 2>/dev/null || true
+find /etc/apache2/mods-enabled/ -name "mpm_*.conf" ! -name "mpm_prefork.conf" -delete 2>/dev/null || true
+
 echo "Démarrage d'Apache sur le port ${PORT}..."
 exec apache2-foreground
