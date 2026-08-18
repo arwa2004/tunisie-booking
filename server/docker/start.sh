@@ -6,8 +6,8 @@ set -e
 # -------------------------------------------------------------
 PORT="${PORT:-8080}"
 echo "Configuration d'Apache sur le port ${PORT}..."
-a2dismod mpm_event mpm_worker 2>/dev/null || true
-a2enmod mpm_prefork 2>/dev/null || true
+rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf 2>/dev/null || true
+a2enmod mpm_prefork rewrite 2>/dev/null || true
 
 sed -ri "s/Listen 80/Listen ${PORT}/g" /etc/apache2/ports.conf 2>/dev/null || true
 sed -ri "s/:80/:${PORT}/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
