@@ -1,0 +1,620 @@
+% ============================================================
+% Rapport_Complet_TunisieBooking.tex
+% Rapport consolidé : Architecture Microservices + n8n + Railway
+% ============================================================
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\usepackage{polyglossia}
+\setmainlanguage{french}
+\usepackage{tocloft}
+\usepackage{geometry}
+\usepackage[table]{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{lastpage}
+\usepackage{array}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric}
+\geometry{top=2.2cm, bottom=2.2cm, left=2.2cm, right=2.2cm}
+
+% ---------- Couleurs ----------
+\definecolor{accent}{HTML}{1a3a6b}
+\definecolor{green}{HTML}{0F6E56}
+\definecolor{greenbg}{HTML}{E1F5EE}
+\definecolor{codebg}{HTML}{f4f4f4}
+\definecolor{placeholderbg}{HTML}{fafafa}
+\definecolor{placeholderline}{HTML}{999999}
+\definecolor{accentred}{HTML}{A6192E}
+
+% ---------- Style du Sommaire ----------
+\renewcommand{\cftchapfont}{\bfseries\color{accentred}}
+\renewcommand{\cftchappagefont}{\bfseries\color{accentred}}
+\renewcommand{\cftsecfont}{\normalfont}
+\setlength{\cftbeforechapskip}{10pt}
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+
+% ---------- Titres ----------
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{accent}}{\chaptertitlename\ \thechapter}{10pt}{\Huge}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{accent}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% ---------- En-tête / pied de page ----------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\small\color{gray}TunisieBooking --- Rapport Consolidé}
+\fancyfoot[C]{\small Page \thepage\ / \pageref{LastPage}}
+
+% ---------- Style des blocs de code ----------
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  rulecolor=\color{gray!40},
+  breaklines=true,
+  columns=fullflexible,
+  showstringspaces=false,
+}
+
+\newtcolorbox{shotbox}{
+  colback=placeholderbg, colframe=placeholderline,
+  arc=2pt, boxrule=1pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt
+}
+\newcommand{\screenshot}[1]{%
+  \begin{shotbox}
+    \centering\small\color{gray!70}
+    \textbf{[CAPTURE D'ÉCRAN À INSÉRER]}\\[2pt]
+    #1
+  \end{shotbox}
+}
+
+\newcommand{\passe}{\textbf{\color{green}PASSÉ}}
+\newcommand{\ok}{\textbf{\color{green}Opérationnel}}
+
+\begin{document>
+
+% ============================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+
+  \begin{scope}
+    \clip (current page.south west) rectangle
+      ([xshift=7cm]current page.north west);
+    \foreach \x/\y/\s/\c/\r in {
+      1.0/1.0/2.6/accentred/15,
+      3.2/0.3/1.7/black!75/-25,
+      0.5/3.5/2.0/gray!55/40,
+      3.6/3.0/1.4/accentred/100,
+      1.3/5.7/2.3/gray!45/10,
+      3.8/6.0/1.3/black!80/60,
+      0.8/8.6/2.6/gray!40/-30,
+      3.4/9.0/1.2/accentred/0,
+      1.1/11.4/1.9/black!70/50,
+      3.5/12.0/2.1/gray!55/-20,
+      0.7/14.3/1.5/accentred/80,
+      3.0/14.7/1.8/gray!45/15,
+      1.0/17.1/2.4/black!75/-40,
+      3.4/17.4/1.6/accentred/25,
+      1.4/19.8/2.0/gray!50/70,
+      0.4/22.0/2.6/black!65/-10,
+      3.2/22.4/1.4/accentred/45,
+      1.6/24.8/2.1/gray!55/-60,
+      0.6/27.0/2.3/black!70/30,
+      3.0/27.3/1.6/accentred/5,
+      1.2/29.0/1.8/gray!50/-15
+    }{
+      \node[regular polygon, regular polygon sides=3, fill=\c,
+            minimum size=\s cm, rotate=\r, opacity=0.92]
+            at ([xshift=\x cm, yshift=-\y cm]current page.north west) {};
+    }
+  \end{scope}
+
+  \node[anchor=north] at ([yshift=-1.8cm]current page.north)
+    {\includegraphics[width=7cm]{images/logo_esprit.jpg}};
+
+  \node[anchor=north, align=center] at ([yshift=-6.5cm]current page.north)
+    {\Large\bfseries RAPPORT DE STAGE\\[2pt]D'INGÉNIEUR};
+
+  \node[fill=accentred, minimum width=\paperwidth, minimum height=1.55cm,
+        text width=17.5cm, align=center, text=white, font=\bfseries\large]
+    at ([yshift=-10.5cm]current page.north) {DÉVELOPPEMENT D'UNE PLATEFORME DE\\RÉSERVATION HÔTELIÈRE};
+
+  \node[anchor=north, align=center] at ([yshift=-12.8cm]current page.north)
+    {\normalsize SPÉCIALITÉ~:};
+  \node[anchor=north, align=center] at ([yshift=-13.6cm]current page.north)
+    {\large\bfseries TWIN};
+
+  \node[anchor=north, align=center] at ([yshift=-16cm]current page.north)
+    {\large\bfseries Réalisé par~: \normalfont Ben Amar Arwa};
+
+  \node[anchor=north, align=center] at ([yshift=-18cm]current page.north)
+    {\large\bfseries Proposé par~: \normalfont Tunisie Booking};
+
+  \node[anchor=north, align=center] at ([yshift=-20cm]current page.north)
+    {\large\bfseries Encadré par~: \normalfont Mr Anis Assas};
+
+  \node[anchor=north] at ([yshift=-22.5cm]current page.north)
+    {\includegraphics[width=4cm]{images/tunisie_booking_logo.png}};
+
+  \node[anchor=south, align=center] at ([yshift=2cm]current page.south)
+    {\large\bfseries Année universitaire~: \normalfont 2025-2026};
+
+\end{tikzpicture}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+
+% ============================================================
+\chapter*{Introduction Générale}
+\addcontentsline{toc}{chapter}{Introduction Générale}
+
+Au cours de ces dernières années, la réservation en ligne s'est imposée comme un canal incontournable dans le domaine du tourisme. En Tunisie, l'évolution des habitudes de consommation pousse les agences de voyages à adapter leurs outils numériques afin d'offrir des services plus accessibles, rapides et transparents. Les clients recherchent aujourd'hui des plateformes capables de leur présenter une information claire sur les hôtels, de comparer les prestations et d'effectuer leurs réservations en toute autonomie.
+
+C'est dans ce contexte que s'inscrit mon stage de fin d'études, effectué au sein de la société \textbf{Spring Travel Services}, connue sous la marque \textbf{TunisieBooking}. Mon travail a consisté à concevoir et à développer une application web complète de réservation hôtelière, capable de répondre à la fois aux exigences des clients grand public et aux besoins d'administration de l'agence.
+
+Afin de mener à bien ce projet et de répondre aux contraintes de performance et de scalabilité, j'ai structuré mon étude autour de deux phases d'ingénierie principales :
+\begin{itemize}[leftmargin=1.2em]
+  \item Tout d'abord, j'ai mis en place une \textbf{première version monolithique} basée sur les frameworks Laravel 11 et Next.js 14, associée à une base de données MySQL.
+  \item Dans un second temps, j'ai fait évoluer le système vers une \textbf{architecture microservices polyglotte conteneurisée}, exploitant trois environnements backend distincts (PHP, Java Spring Boot, Node.js Express) et trois moteurs de bases de données (MySQL, H2, MongoDB), l'ensemble étant sécurisé par Keycloak, automatisé par n8n et orchestré par un API Gateway Nginx.
+\end{itemize}
+
+Le présent rapport retrace l'intégralité de la démarche que j'ai suivie, depuis l'immersion dans l'entreprise d'accueil jusqu'à la validation expérimentale des performances et du déploiement Cloud.
+
+\clearpage
+% ============================================================
+\chapter{Cadre du Stage \& Présentation de l'Entreprise}
+
+\section{Fiche Technique de Spring Travel Services}
+
+\begin{longtable}{@{}p{4.5cm}p{9.5cm}@{}}
+\toprule
+\rowcolor{accent}
+\textbf{\color{white}Élément} & \textbf{\color{white}Information Officielle} \\
+\midrule
+\endhead
+Raison sociale & Spring Travel Services \\
+Marque commerciale & TunisieBooking \\
+Forme juridique & SARL \\
+Date de création & 30 septembre 2009 (Marque créée en 2004) \\
+Licence d'exploitation & Agence de Catégorie A --- Licence n\textdegree~8517 \\
+Fondateur & M. Khaled Rojbi \\
+Siège social & Avenue Houssine Anane, Houmet Souk, 4180 Djerba \\
+Téléphone & (+216) 71 124 124 \\
+Adresse e-mail & \texttt{Djerba@tunisiebooking.com} \\
+Réseau commercial & 32 agences physiques réparties en Tunisie \\
+Sites web officiels & Portails dédiés aux marchés maghrébin et européen \\
+Activités & Hôtellerie en Tunisie, Billetterie aérienne, Voyages à l'étranger, Omra \\
+Partenaires & Chaînes hôtelières, compagnies aériennes, tours-opérateurs \\
+\bottomrule
+\end{longtable}
+
+\section{Historique \& Activités de TunisieBooking}
+
+Fondée en 2004 par Monsieur Khaled Rojbi, la marque TunisieBooking est exploitée par la société Spring Travel Services, agence de voyages de catégorie A. Au fil des années, l'entreprise a su développer un réseau solide comptant aujourd'hui 32 agences physiques réparties sur l'ensemble du territoire tunisien.
+
+L'activité principale de TunisieBooking repose sur la commercialisation de séjours hôteliers et de prestations touristiques via internet. L'entreprise s'adresse aussi bien aux particuliers qu'aux professionnels du secteur (agences de voyages partenaires), auxquels elle propose des tarifs préférentiels négociés.
+
+\section{Rôle \& Valeur Ajoutée de l'Entreprise}
+
+Le travail de Spring Travel Services dépasse la simple vente de séjours. L'agence apporte une véritable assistance à ses clients à chaque étape de leur projet de voyage :
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Conseil et orientation} : information sur les formalités de voyage, les visas, la validité des pièces d'identité et les conditions sanitaires.
+  \item \textbf{Plateforme de réservation} : mise à disposition d'un site web intuitif offrant des tarifs compétitifs mis à jour en temps réel.
+  \item \textbf{Accompagnement personnalisé} : prise en charge des besoins spécifiques des voyageurs d'affaires et de loisirs.
+\end{enumerate}
+
+\section{Organisation Interne \& Organigramme}
+
+L'entreprise est structurée en plusieurs départements spécialisés travaillant en concertation pour assurer le bon déroulement des opérations :
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{images/organigramme.png}
+    \caption{Organigramme fonctionnel de Spring Travel Services}
+    \label{fig:placeholder}
+\end{figure}
+
+\clearpage
+% ============================================================
+\chapter{Organisation \& Rôle des Départements}
+
+\section{Département Vente \& Agences}
+Ce département s'occupe de la commercialisation des différentes offres. Il s'appuie sur trois axes : le service conseil client par téléphone et en ligne, le réseau des 32 agences physiques, et le service billetterie qui gère les réservations de vols via Amadeus.
+
+\section{Département Qualité \& Relations Clients}
+Il veille au suivi de la satisfaction des usagers. Ses équipes gèrent les demandes de modification de séjours, le traitement des réclamations, ainsi que le programme de fidélité de l'agence.
+
+\section{Département Commercial \& Production}
+Sa mission consiste à élaborer l'offre touristique. Les responsables négocient les contrats avec les hôteliers, fixent la grille tarifaire et alimentent le système d'information interne de l'entreprise.
+
+\section{Département Technique \& Informatique}
+Ce département administre l'infrastructure informatique de l'entreprise. Il assure la maintenance des sites web (TunisieBooking, Resabooking), la gestion des bases de données, la sécurité du réseau et l'optimisation du référencement (SEO).
+
+\section{Département Marketing \& Communication}
+Il conçoit et déploie les stratégies promotionnelles sur les canaux numériques et traditionnels. L'équipe gère la présence sur les réseaux sociaux, la création visuelle et l'analyse de l'audience web.
+
+\section{Département Administratif \& Financier}
+Il encadre la gestion comptable, la gestion des ressources humaines, la paie et le suivi financier de la société.
+
+\clearpage
+% ============================================================
+\chapter{Besoins \& Spécifications du Projet}
+
+\section{Contexte \& Objectifs de Mon Travail}
+
+Dans le cadre de mon projet, mon objectif était de concevoir un système d'information moderne capable de gérer efficacement le processus de réservation d'hôtels, en offrant une interface simple pour l'utilisateur et un outil d'administration complet pour l'équipe de l'agence.
+
+\begin{longtable}{@{}p{5.5cm}p{8.5cm}@{}}
+\toprule
+\rowcolor{accent}
+\textbf{\color{white}Objectif} & \textbf{\color{white}Solution Implémentée} \\
+\midrule
+\endhead
+Consultation facile des hôtels & Moteur de recherche avec filtres (destination, étoiles, tarifs) \\
+Calcul automatique du prix & Prise en compte de la durée, de la pension et des âges des enfants \\
+Suivi des réservations & Espace personnel client avec historique et favoris \\
+Gestion administrative & Dashboard avec indicateurs clés et gestion CRUD des données \\
+\bottomrule
+\end{longtable}
+
+\section{Spécifications Fonctionnelles}
+
+L'application couvre les fonctionnalités suivantes :
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Catalogue d'hôtels} : consultation des fiches détaillées, équipements, avis et photos.
+  \item \textbf{Réservation en ligne} : choix des dates, du nombre de chambres et de la pension avec calcul dynamique du montant total.
+  \item \textbf{Gestion des avis} : publication de notes et de commentaires par les clients ayant séjourné dans un hôtel.
+  \item \textbf{Gestion des favoris} : sauvegarde des établissements préférés dans le compte client.
+  \item \textbf{Panneau d'administration} : supervision des réservations, gestion des utilisateurs et mise à jour du catalogue.
+\end{itemize}
+
+\section{Gestion des Rôles \& Règles Métier Tarifaires}
+
+L'application distingue deux types d'utilisateurs :
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Client} : accès à la recherche, à la réservation, à l'historique et aux favoris.
+  \item \textbf{Administrateur} : accès à l'ensemble du panneau de contrôle pour la gestion du système.
+\end{enumerate}
+
+\textbf{Formule de calcul tarifaire.} Pour calculer le montant d'une réservation, l'application applique la règle suivante :
+\begin{itemize}[leftmargin=1.2em]
+  \item Enfants de moins de 2 ans : gratuit.
+  \item Enfants de 2 à 11 ans : +30 DT par nuit.
+  \item Enfants de 12 ans et plus : +50 DT par nuit.
+  \item Supplément de pension : Petit Déjeuner (0 DT), Demi-Pension (+40 DT), All Inclusive Soft (+70 DT), All Inclusive (+100 DT).
+\end{itemize}
+
+\[
+\text{Montant Total} = (\text{Tarif Chambre} + \text{Supplément Pension} + \text{Supplément Enfants}) \times \text{Nuits} \times \text{Chambres}
+\]
+
+\section{Récapitulatif des Technologies par Architecture}
+
+Avant de détailler la réalisation technique, voici une synthèse comparative des frameworks et bases de données utilisés dans chaque version du projet :
+
+\subsection*{Architecture Monolithique (Version 1)}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Frameworks} : \textbf{Laravel 11} (Backend PHP) --- \textbf{Next.js 14} (Frontend React / TypeScript)
+  \item \textbf{Base de données} : \textbf{MySQL 8.0} (Base relationnelle unique)
+\end{itemize}
+
+\subsection*{Architecture Microservices Polyglotte (Version 2)}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Frameworks} : \textbf{Laravel 11} (\texttt{user-service}) --- \textbf{Spring Boot 3} (\texttt{hotel-service}) --- \textbf{Express.js} (\texttt{booking-service}) --- \textbf{Next.js 14} (Frontend)
+  \item \textbf{Bases de données} : \textbf{MySQL 8.0} (Utilisateurs) --- \textbf{H2 Database} (Hôtels) --- \textbf{MongoDB 6.0} (Réservations NoSQL)
+  \item \textbf{Automation \& Cloud} : \textbf{n8n} (Automatisations \& Webhooks) --- \textbf{Railway} (Déploiement Cloud PaaS Docker)
+\end{itemize}
+
+\clearpage
+% ============================================================
+\chapter{Première Version --- Déploiement du Monolithe}
+
+\section{Architecture Initiale (Laravel 11, Next.js 14, MySQL)}
+
+Dans un premier temps, j'ai développé l'application sous la forme d'un monolithe classique en deux tiers. Le serveur backend Laravel gère la logique métier et fournit une API REST, tandis que l'application Next.js prend en charge le rendu côté client.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/arch_monolithique.png}
+    \caption{Schéma de l'architecture monolithique initiale}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Conception de la Base de Données \& Migrations}
+
+J'ai conçu la base de données relationnelle \texttt{tunisie\_booking} en l'organisant autour de \textbf{11 tables principales} créées à l'aide de \textbf{22 migrations} Laravel.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/schéma_relationnel.png}
+    \caption{Schéma relationnel de la base de données MySQL}
+    \label{fig:placeholder}
+\end{figure}
+
+Les tables principales regroupent les informations des utilisateurs (\texttt{users}), des hôtels (\texttt{hotels}), des chambres (\texttt{chambres}), des réservations (\texttt{reservations}), des avis (\texttt{avis}) et des favoris (\texttt{favoris}).
+
+\section{Développement de l'API REST \& Sécurité Sanctum}
+
+L'API REST développée sous Laravel sert d'intermédiaire entre l'interface utilisateur (Next.js) et la base de données. Elle regroupe environ 40 fonctionnalités (consulter les hôtels, réserver, laisser un avis) protégées par trois niveaux de sécurité :
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{Authentification par Badge Numérique (Laravel Sanctum)} : Lors de la connexion, le serveur délivre un jeton sécurisé (Token Bearer) valable 7 jours. Ce jeton est transmis automatiquement à chaque requête pour identifier le client sans réclamer son mot de passe à chaque clic.
+  \item \textbf{Contrôle d'Accès par Rôle (Middleware Admin)} : Un filtre de sécurité vérifie le rôle de l'utilisateur avant d'autoriser l'accès aux fonctions d'administration (création d'hôtels, suppression d'utilisateurs). Un utilisateur classique recevra un refus d'accès (HTTP 403).
+  \item \textbf{Protection Anti-Abus (Rate Limiting / Throttle)} : Le serveur limite le nombre de tentatives sur les formulaires sensibles (ex: maximum 5 tentatives de connexion par minute) pour bloquer les attaques automatisées par force brute.
+\end{enumerate}
+
+\section{Tests d'Intégration \& Unitaires PHPUnit}
+
+Pour m'assurer du bon fonctionnement du backend monolithique, j'ai écrit et exécuté une série de \textbf{64 tests PHPUnit} sur une base SQLite en mémoire :
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{31 tests unitaires} : vérification des méthodes de calcul de prix et des contraintes de dates.
+  \item \textbf{33 tests feature} : validation des parcours d'authentification, de réservation et d'administration des données.
+\end{itemize}
+
+\clearpage
+% ============================================================
+\chapter{Évolution vers l'Architecture Microservices Polyglotte}
+
+\section{Justification de la Reconversion Microservices}
+
+Afin d'améliorer la tolérance aux pannes du système et de permettre une meilleure évolutivité des différents composants, j'ai entrepris la refonte de l'application vers une architecture microservices conteneurisée avec Docker. Cette approche permet d'isoler chaque domaine fonctionnel et d'adapter les choix technologiques aux besoins spécifiques de chaque service.
+
+\section{Approche Polyglotte : 3 Langages, 3 Bases de Données}
+
+J'ai découpé l'application en trois microservices indépendants, chacun disposant de son propre environnement de développement et de son propre système de gestion de base de données (\textit{Polyglot Persistence}) :
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{images/architecture_diagram.png}
+  \caption{Schéma global de l'architecture microservices distribuée}
+\end{figure}
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item \textbf{\texttt{user-service} (PHP 8.3 / Laravel 11 + MySQL 8.0)} : spécialisé dans la gestion des comptes utilisateurs.
+  \item \textbf{\texttt{hotel-service} (Java 17 / Spring Boot 3 + H2 Database)} : dédié à la gestion du catalogue des hôtels et des destinations.
+  \item \textbf{\texttt{booking-service} (Node.js / Express + MongoDB 6.0)} : dédié au traitement rapide des réservations et à leur stockage au format document JSON.
+\end{enumerate}
+
+\section{Modélisation par Document \& Snapshot (MongoDB)}
+
+Dans le cas du service de réservation, j'ai choisi d'utiliser le pattern Snapshot. Lors de la création d'une réservation, l'état exact des données (nom de l'hôtel, tarif appliqué, coordonnées du client) est figé dans le document MongoDB. Ainsi, une modification ultérieure du prix de l'hôtel dans la base du service hôtel n'altère pas les réservations déjà enregistrées.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/mingoDB.png}
+    \caption{Base de donnée MongoDB}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Sécurité Centralisée SSO Keycloak \& Jeton JWT}
+
+Dans l'architecture microservices, l'authentification est confiée à un serveur Keycloak 26 autonome (port 8080).
+\begin{itemize}[leftmargin=1.2em]
+  \item L'utilisateur s'identifie auprès de Keycloak, qui lui délivre un jeton JWT crypté.
+  \item Le client transmet ce jeton dans l'en-tête \texttt{Authorization: Bearer} lors de ses requêtes.
+  \item Chaque microservice vérifie la signature du jeton de manière autonome, sans consulter la base de données centrale.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/keycloak.png}
+    \caption{Tunisie Booking Realm}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Passerelle API Gateway Nginx \& Gestion du CORS (OPTIONS 204)}
+
+J'ai configuré un serveur Nginx (port 8000) comme point d'entrée unique de l'application. Nginx se charge de rediriger les requêtes vers le bon microservice et de gérer les politiques de sécurité CORS (\textit{Cross-Origin Resource Sharing}).
+
+Lorsqu'un navigateur effectue une requête préalable \texttt{OPTIONS} depuis le port 3000, Nginx répond instantanément \textbf{204 No Content} avec les en-têtes d'autorisation appropriés, évitant ainsi tout blocage par le navigateur.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/option_preflight.png}
+    \caption{Vérification cURL de la réponse OPTIONS 204 de Nginx}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Registre de Services Eureka \& Déroulement du Démarrage}
+
+J'ai intégré le serveur Netflix Eureka (port 8761) pour assurer la découverte automatique des services. Chaque microservice s'y signale dès qu'il est opérationnel.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{images/Booking_up.png}
+  \caption{localhost:8761 d'Eureka}
+\end{figure">
+
+\section{Automatisation des Workflows Métier avec n8n (Webhooks \& Notifications)}
+
+Pour automatiser les processus post-réservation sans alourdir le code des microservices, j'ai intégré la plateforme d'automatisation de workflows \textbf{n8n}.
+
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Déclencheur Webhook} : Lors de la création d'une nouvelle réservation dans \texttt{booking-service}, un événement HTTP POST (Webhook) est instantanément transmis à l'instance n8n.
+  \item \textbf{Génération du Voucher} : n8n formate les données du Snapshot de réservation (référence, dates, hôtel, montant).
+  \item \textbf{Notification Multi-Canal} : n8n envoie automatiquement un e-mail de confirmation détaillé au client et notifie l'équipe de l'agence via une alerte instantanée.
+\end{itemize}
+
+\screenshot{Éditeur de workflows n8n avec les nœuds Webhook, Email et Notification}
+
+\section{Déploiement Cloud \& PaaS avec Railway}
+
+Afin de valider l'application dans un environnement distribué proche de la production, j'ai mis en place une architecture de déploiement sur la plateforme Cloud \textbf{Railway} (PaaS).
+
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Intégration Continue (CI/CD)} : Déploiement automatique déclenché à chaque mise à jour de la branche \texttt{microservices} du dépôt GitHub \texttt{arwa2004/tunisie-booking}.
+  \item \textbf{Orchestration des Conteneurs} : Déploiement autonome de chaque image Docker (\texttt{user-service}, \texttt{hotel-service}, \texttt{booking-service}, \texttt{gateway}) avec injection dynamique des variables d'environnement.
+  \item \textbf{Bases de Données Cloud Managées} : Provisionnement d'instances cloud dédiées pour MySQL et MongoDB avec sauvegardes automatiques.
+\end{itemize}
+
+\screenshot{Dashboard Railway avec la topologie des microservices et conteneurs Cloud}
+
+\clearpage
+% ============================================================
+\chapter{Stratégie de Validation \& Analyse des Tests}
+
+\section{Démarche de Test Comparatif}
+
+Afin de mesurer les apports de chaque architecture, j'ai mis en place une procédure de test rigoureuse sur les deux versions de l'application :
+
+\begin{longtable}{@{}p{2.4cm}p{3.6cm}p{3.8cm}p{3.6cm}@{}}
+\toprule
+\rowcolor{accent}
+\textbf{\color{white}Type de Test} & \textbf{\color{white}Version Monolithique} & \textbf{\color{white}Version Microservices} & \textbf{\color{white}Objectif} \\
+\midrule
+\endhead
+Unitaires & 31 tests PHPUnit & 11 tests Jest (\texttt{priceCalculator}) & Contrôle des calculs isolés \\
+Intégration & 33 tests PHPUnit + SQLite & 31 tests Jest + MongoDB / H2 & Contrôle de la chaîne API/BDD \\
+E2E & 3 specs Playwright & 21 scénarios Playwright & Simulation du parcours utilisateur \\
+Sécurité CORS & Middleware Laravel & Nginx Gateway (OPTIONS 204) & Contrôle des accès inter-domaines \\
+Charge & Script Node.js (4 vagues) & Postman Performance Runner & Évaluation du débit sous trafic \\
+Résilience & --- & Arrêt/Redémarrage conteneur Docker & Test de la tolérance aux pannes \\
+\bottomrule
+\end{longtable}
+
+\section{Structure de la Pyramide de Tests}
+
+J'ai structuré mes tests selon une pyramide à 6 niveaux, allant de la validation du code jusqu'à la résistance de l'infrastructure :
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{images/test_pyramid.png}
+  \caption{Pyramide des tests du projet}
+\end{figure}
+
+\section{Validation des Fonctions Métier (PHPUnit \& Jest)}
+
+J'ai validé de façon autonome les règles de calcul des séjours (tarifs enfants, suppléments pensions, calcul du nombre de nuits).
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Monolithe} : 31 tests PHPUnit validant les modèles \texttt{Reservation}, \texttt{Hotel}, \texttt{Destination} et \texttt{Voyage}.
+  \item \textbf{Microservices} : 11 tests Jest sur le module \texttt{priceCalculator.test.js} et 6 suites de tests sur les composants React UI (\texttt{ChambreSelector}, \texttt{HotelCard}...).
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/tests_uitaires.png}
+    \caption{Résultat des tests unitaires dans le terminal}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Validation des Endpoints API REST (PHPUnit \& Jest)}
+
+J'ai testé l'ensemble des routes API REST en m'assurant que les opérations de création, de lecture, de mise à jour et de suppression (CRUD) s'exécutent correctement en base de données.
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Monolithe} : 33 tests feature PHPUnit couvrant l'authentification et l'administration.
+  \item \textbf{Microservices} : 14 tests d'intégration sur \texttt{booking-service} (MongoDB \texttt{booking\_test\_db}) et 17 tests sur \texttt{hotel-service}.
+\end{itemize}
+
+\section{Tests E2E de Parcours Utilisateur (Playwright)}
+
+J'ai rédigé des scénarios E2E exécutés avec Playwright Chromium pour simuler la navigation d'un client réel (recherche d'hôtel, sélection des dates, réservation et redirection vers la connexion) :
+
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Monolithe} : 3 fichiers de scénarios E2E automatisés.
+  \item \textbf{Microservices} : 21 scénarios E2E validés et visualisables via le rapport HTML Playwright (\texttt{npx playwright show-report}).
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\linewidth]{images/rapport_playwright.png}
+    \caption{Interface du rapport HTML Playwright}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection*{-Test de Bout-en-Bout en Temps Réel \& Rapport Excel Automatisé (\texttt{live-test-recorder.js}):}
+
+Afin d'offrir une traçabilité complète et d'évaluer l'application en situation réelle, j'ai développé un module d'enregistrement interactif en temps réel (\texttt{live-test-recorder.js}).
+
+\textbf{Fonctionnement du test en temps réel :}
+
+\begin{enumerate}[leftmargin=1.4em]
+  \item Un navigateur Chromium est lancé en direct. L'utilisateur (ou le testeur) navigue librement sur l'interface (recherche, sélection de chambres, authentification, soumission).
+  \item Chaque action effectuée (clics, saisies de formulaires, changements d'URL, temps de réponse HTTP) est interceptée et capturée instantanément.
+  \item À la clôture de la session de test, l'outil compile et génère automatiquement un rapport Excel détaillé (\texttt{Rapport\_Tests\_E2E\_Microservices.xlsx} ou \texttt{Session\_Live_Tests.xlsx}). Ce rapport regroupe la liste exhaustive des étapes franchies, le statut de chaque requête (succès/échec) et la mesure exacte de la latence.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{images/live_recorder1.png}
+    \caption{fichier Excel généré}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Évaluation des Performances sous Charge (Postman)}
+
+J'ai évalué la résistance de l'application sous un trafic important à l'aide de l'outil Postman Performance Runner.
+
+\begin{longtable}{@{}p{3.6cm}p{4.2cm}p{4.2cm}@{}}
+\toprule
+\rowcolor{accent}
+\textbf{\color{white}Métrique} & \textbf{\color{white}Version Monolithique} & \textbf{\color{white}Version Microservices} \\
+\midrule
+\endhead
+Outil employé & Script Node.js custom (4 vagues) & Postman Performance Runner \\
+Volume de requêtes & 5 000 requêtes & \textbf{14 600 requêtes} \\
+Débit observé & \textasciitilde 180 req/sec & \textbf{\color{green}427.11 req/sec} \\
+Latence moyenne & 65 ms & \textbf{24 ms} \\
+Taux d'erreur & 0.00\% & \textbf{\color{green}0.00\%} \\
+\bottomrule
+\end{longtable}
+
+L'architecture microservices permet d'obtenir un débit plus de deux fois supérieur avec un temps de réponse moyen de seulement 24 ms.
+
+\section{Évaluation de la Résilience aux Pannes (Docker)}
+
+J'ai testé la tolérance aux pannes du système microservices en simulant l'arrêt inopiné du conteneur de réservation (\texttt{docker stop tb\_booking_service}).
+\begin{enumerate}[leftmargin=1.4em]
+  \item Le serveur Eureka a immédiatement détecté la panne et mis à jour le statut du service à \textbf{DOWN}.
+  \item Le service de consultation des hôtels a continué de fonctionner normalement à 100\%, prouvant l'isolation des composants.
+  \item Lors du redémarrage du conteneur (\texttt{docker start}), le service s'est réenregistré automatiquement en statut \textbf{UP} sans nécessiter de redémarrage global.
+\end{enumerate}
+
+\clearpage
+% ============================================================
+\chapter*{Conclusion Générale \& Bilan de Stage}
+\addcontentsline{toc}{chapter}{Conclusion Générale \& Bilan de Stage}
+
+Ce stage de fin d'études au sein de l'entreprise Spring Travel Services / TunisieBooking a été pour moi une expérience particulièrement enrichissante. Il m'a permis de concevoir une solution logicielle complète en répondant à des problématiques concrètes du secteur du tourisme.
+
+La démarche progressive que j'ai adoptée --- en développant d'abord une version monolithique avec Laravel 11 et Next.js 14, puis en la faisant évoluer vers une architecture microservices polyglotte sous Docker --- m'a permis d'appréhender concrètement les avantages et les contraintes de chaque approche.
+
+\subsection*{Bilan Synthétique des Réalisations}
+\begin{lstlisting}
+Duree du stage           : 8 semaines (Juin - Juillet 2026)
+Versions developpees     : 2 (Monolithe Laravel & Microservices Polyglotte Docker)
+Total des tests valides  : Plus de 120 tests automatises (100% de reussite)
+Debit maximal atteint    : 427 requetes / seconde (0.00% d'erreur)
+Temps de reponse moyen   : 24 ms en microservices
+Technologies backend     : PHP 8.3 (Laravel 11), Java 17 (Spring Boot 3), Node.js (Express)
+Bases de donnees         : MySQL 8.0, H2 Database, MongoDB 6.0
+Automatisations & Cloud  : n8n (Webhooks/Emails) & Railway (Deploiement Cloud Docker)
+\end{lstlisting}
+
+Ce travail m'a permis d'affermir mes compétences en développement full-stack, en conception d'architectures distribuées, en automatisation de workflows et en déploiement Cloud conteneurisé.
+
+\vspace{1.5cm}
+\begin{center}
+\textit{Rapport de Projet de Fin d'Études --- TunisieBooking --- Stage 2025/2026}\\
+\textit{Présenté par Arwa Ben Amar --- Encadré par Spring Travel Services}
+\end{center}
+
+\end{document}
