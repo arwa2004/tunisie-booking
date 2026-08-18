@@ -1,0 +1,60 @@
+{
+  "name": "TunisieBooking - Workflow Notification Réservation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reservation-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "id": "webhook-node-1",
+      "name": "Webhook1"
+    },
+    {
+      "parameters": {
+        "fromEmail": "arwabenamar2004@gmail.com",
+        "toEmail": "={{ $json.body.user_email }}",
+        "subject": "=Mise à jour de votre réservation - {{ $json.body.hotel_nom }}",
+        "emailFormat": "html",
+        "html": "=<h3>Bonjour {{ $json.body.user_nom }},</h3>\n<p>Votre réservation à l'hôtel <strong>{{ $json.body.hotel_nom }}</strong> a été <strong>{{ $json.body.action || 'mise à jour' }}</strong>.</p>\n<div style=\"text-align: center; margin: 20px 0;\">\n  <span style=\"background-color: #dcfce7; color: #15803d; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 14px;\">\n    ✅ RÉSERVATION {{ ($json.body.action || 'CONFIRMÉE').toUpperCase() }}\n  </span>\n</div>\n<table style=\"width: 100%; border-collapse: collapse; background-color: #f8fafc; border-radius: 8px;\">\n  <tr>\n    <td style=\"padding: 12px; color: #64748b;\">🏨 Hôtel</td>\n    <td style=\"padding: 12px; text-align: right; font-weight: bold;\">{{ $json.body.hotel_nom }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 12px; color: #64748b;\">📅 Arrivée</td>\n    <td style=\"padding: 12px; text-align: right; font-weight: bold;\">{{ $json.body.date_arrivee }}</td>\n  </tr>\n  <tr>\n    <td style=\"padding: 12px; color: #64748b;\">📅 Départ</td>\n    <td style=\"padding: 12px; text-align: right; font-weight: bold;\">{{ $json.body.date_depart }}</td>\n  </tr>\n</table>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        550,
+        300
+      ],
+      "id": "email-node-1",
+      "name": "Send an Email",
+      "credentials": {
+        "smtp": {
+          "id": "SMTP account",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
