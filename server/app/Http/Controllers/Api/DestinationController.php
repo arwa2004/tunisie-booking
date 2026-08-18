@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Destination;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -12,7 +13,12 @@ class DestinationController extends Controller
 {
     public function index()
     {
-        return response()->json(Destination::all());
+        // ⚡ Cache Redis / File pendant 60 minutes (3600 sec)
+        $destinations = Cache::remember('destinations_all', 3600, function () {
+            return Destination::all();
+        });
+
+        return response()->json($destinations);
     }
 
     public function store(Request $request)
@@ -35,6 +41,9 @@ class DestinationController extends Controller
         }
 
         $destination = Destination::create($data);
+
+        // ⚡ Invalider le cache pour forcer le rafraîchissement
+        Cache::forget('destinations_all');
 
         return response()->json($destination, 201);
     }
@@ -78,6 +87,7 @@ class DestinationController extends Controller
         }
 
         $destination->update($data);
+        Cache::forget('destinations_all');
 
         return response()->json($destination);
     }
@@ -95,6 +105,7 @@ class DestinationController extends Controller
         }
 
         $destination->delete();
+        Cache::forget('destinations_all');
 
         return response()->json(['message' => 'Destination supprimée avec succès.']);
     }

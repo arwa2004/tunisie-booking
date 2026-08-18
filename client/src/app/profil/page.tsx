@@ -43,14 +43,18 @@ export default function ProfilPage() {
   // Upload photo state
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const getToken = () =>
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const getToken = () => {
+    if (typeof window === "undefined") return null;
+    const t = localStorage.getItem("token");
+    return (t && t !== "null" && t !== "undefined") ? t : null;
+  };
 
   useEffect(() => {
     const fetchMe = async () => {
       const token = getToken();
       if (!token) {
         router.push("/login");
+        if (typeof window !== "undefined") window.location.href = "/login";
         return;
       }
       try {

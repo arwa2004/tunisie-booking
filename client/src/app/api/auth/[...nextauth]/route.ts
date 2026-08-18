@@ -4,48 +4,52 @@ import GoogleProvider from "next-auth/providers/google";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    // 1. Authentification par Identifiants (Laravel Breeze)
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Mot de passe", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+const providers: any[] = [
+  CredentialsProvider({
+    name: "Credentials",
+    credentials: {
+      email: { label: "Email", type: "text" },
+      password: { label: "Mot de passe", type: "password" },
+    },
+    async authorize(credentials) {
+      if (!credentials?.email || !credentials?.password) return null;
 
-        try {
-          const res = await fetch(`${API_URL}/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-          });
+      try {
+        const res = await fetch(`${API_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: credentials.email,
+            password: credentials.password,
+          }),
+        });
 
-          const data = await res.json();
-          if (res.ok && data.token) {
-            // Retourne le user combiné avec le token d'API Laravel
-            return {
-              ...data.user,
-              accessToken: data.token,
-            };
-          }
-          return null;
-        } catch (error) {
-          return null;
+        const data = await res.json();
+        if (res.ok && data.token) {
+          return {
+            ...data.user,
+            accessToken: data.token,
+          };
         }
-      },
-    }),
-    // 2. Connexion Google (Socialite / OAuth)
+        return null;
+      } catch (error) {
+        return null;
+      }
+    },
+  }),
+];
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
-  ],
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    })
+  );
+}
+
+export const authOptions: NextAuthOptions = {
+  providers,
   callbacks: {
     // Exécuté lors du login social pour lier le compte avec Laravel
     async signIn({ user, account }) {

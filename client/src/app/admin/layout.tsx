@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import AdminNavbar from "./AdminNavbar";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
 interface AuthUser {
   id: number;
@@ -23,16 +23,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const verifyAccess = async () => {
-      const token = localStorage.getItem("token");
+      const rawToken = localStorage.getItem("token");
+      const token = (rawToken && rawToken !== "null" && rawToken !== "undefined") ? rawToken : null;
 
       if (!token) {
         router.replace("/login");
+        if (typeof window !== "undefined") window.location.href = "/login";
         return;
       }
 
       try {
-        // On revérifie toujours côté serveur (source de vérité),
-        // le localStorage seul peut être trafiqué par l'utilisateur.
         const res = await fetch(`${API_URL}/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         window.dispatchEvent(new Event("auth-change"));
 
         if (currentUser.role !== "admin") {
-          router.replace("/"); // renvoie un client normal vers le site public
+          router.replace("/");
           return;
         }
 

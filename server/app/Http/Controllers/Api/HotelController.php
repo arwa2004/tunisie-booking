@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Hotel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -12,22 +13,29 @@ class HotelController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Hotel::with('destination');
+        $cacheKey = "hotels_list_" . md5(json_encode($request->all()));
 
-        if ($request->has('destination_id')) {
-            $query->where('destination_id', $request->input('destination_id'));
-        }
-        if ($request->has('etoiles')) {
-            $query->where('etoiles', $request->input('etoiles'));
-        }
-        if ($request->has('prix_max')) {
-            $query->where('prix_par_nuit', '<=', $request->input('prix_max'));
-        }
-        if ($request->has('disponible')) {
-            $query->where('disponible', $request->boolean('disponible'));
-        }
+        // ⚡ Mettre en cache la recherche d'hôtels pendant 30 minutes (1800s)
+        $hotels = Cache::remember($cacheKey, 1800, function () use ($request) {
+            $query = Hotel::with('destination');
 
-        return response()->json($query->get());
+            if ($request->has('destination_id')) {
+                $query->where('destination_id', $request->input('destination_id'));
+            }
+            if ($request->has('etoiles')) {
+                $query->where('etoiles', $request->input('etoiles'));
+            }
+            if ($request->has('prix_max')) {
+                $query->where('prix_par_nuit', '<=', $request->input('prix_max'));
+            }
+            if ($request->has('disponible')) {
+                $query->where('disponible', $request->boolean('disponible'));
+            }
+
+            return $query->get();
+        });
+
+        return response()->json($hotels);
     }
 
     public function store(Request $request)
