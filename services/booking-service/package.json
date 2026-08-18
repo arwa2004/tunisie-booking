@@ -1,0 +1,22 @@
+{
+  "name": "booking-service",
+  "version": "1.0.0",
+  "description": "Booking Microservice — Node.js + Express + MongoDB (MVC)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "jest --verbose --forceExit --detectOpenHandles"
+  },
+  "keywords": ["tunisiebooking", "reservation", "microservice", "mvc"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.1.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.0.0",
+    "supertest": "^6.3.3"
+  }
+}

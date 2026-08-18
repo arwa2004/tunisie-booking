@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schéma d'Architecture Microservices — TunisieBooking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #0f172a;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .diagram-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 35px 25px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            max-width: 1050px;
+            width: 100%;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .instructions {
+            margin-top: 25px;
+            background: #ffffff;
+            border: 1px dashed #cbd5e1;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .instructions span {
+            color: #0284c7;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🌐 Architecture Microservices Polyglotte (Docker) — TunisieBooking</h1>
+        <p>Schéma Technique Officiel (Next.js 14, Nginx Gateway, Keycloak, Laravel, Spring Boot, Express)</p>
+    </div>
+
+    <div class="diagram-card">
+        <svg viewBox="0 0 960 460" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <marker id="arr-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#0284c7" />
+                </marker>
+                <marker id="arr-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#16a34a" />
+                </marker>
+            </defs>
+
+            <!-- FRONTEND CLIENT -->
+            <g transform="translate(20, 170)">
+                <rect width="170" height="120" rx="10" fill="#000000" stroke="#334155" stroke-width="1.5"/>
+                <text x="85" y="30" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700">FRONTEND</text>
+                <text x="85" y="58" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="800">Next.js 14</text>
+                <text x="85" y="78" text-anchor="middle" fill="#cbd5e1" font-size="11">App Router (React)</text>
+                <rect x="35" y="92" width="100" height="18" rx="4" fill="#0284c7"/>
+                <text x="85" y="105" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Port 3000</text>
+            </g>
+
+            <!-- ARROW FRONTEND -> GATEWAY -->
+            <g>
+                <line x1="190" y1="230" x2="265" y2="230" stroke="#0284c7" stroke-width="2" marker-end="url(#arr-blue)" />
+                <rect x="198" y="205" width="56" height="18" rx="3" fill="#e0f2fe" stroke="#bae6fd"/>
+                <text x="226" y="217" text-anchor="middle" fill="#0369a1" font-size="9" font-weight="700">API REST</text>
+            </g>
+
+            <!-- API GATEWAY NGINX + KEYCLOAK -->
+            <g transform="translate(270, 140)">
+                <rect width="190" height="180" rx="12" fill="#15803d" stroke="#16a34a" stroke-width="1.5"/>
+                <text x="95" y="28" text-anchor="middle" fill="#bbf7d0" font-size="10" font-weight="700">API GATEWAY</text>
+                <text x="95" y="55" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="800">Nginx</text>
+                <text x="95" y="75" text-anchor="middle" fill="#dcfce7" font-size="11">Routage · CORS OPTIONS 204</text>
+                
+                <!-- KEYCLOAK SSO -->
+                <rect x="20" y="95" width="150" height="42" rx="8" fill="#14532d" stroke="#4ade80" stroke-width="1"/>
+                <text x="95" y="112" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Keycloak SSO</text>
+                <text x="95" y="127" text-anchor="middle" fill="#86efac" font-size="9">OAuth2 / OIDC · Port 8080</text>
+
+                <rect x="45" y="150" width="100" height="18" rx="4" fill="#166534"/>
+                <text x="95" y="163" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Port 8000</text>
+            </g>
+
+            <!-- ARROWS GATEWAY -> MICROSERVICES -->
+            <line x1="460" y1="180" x2="535" y2="85" stroke="#16a34a" stroke-width="2" marker-end="url(#arr-green)" />
+            <line x1="460" y1="230" x2="535" y2="230" stroke="#16a34a" stroke-width="2" marker-end="url(#arr-green)" />
+            <line x1="460" y1="280" x2="535" y2="375" stroke="#16a34a" stroke-width="2" marker-end="url(#arr-green)" />
+
+            <!-- MICROSERVICE 1: USER SERVICE -->
+            <g transform="translate(540, 30)">
+                <rect width="190" height="110" rx="10" fill="#ff2d20" stroke="#dc2626" stroke-width="1.5"/>
+                <text x="95" y="25" text-anchor="middle" fill="#fecdd3" font-size="11" font-weight="700">user-service</text>
+                <text x="95" y="48" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="800">PHP 8.3 / Laravel 11</text>
+                <text x="95" y="68" text-anchor="middle" fill="#ffffff" font-size="10">Gestion Utilisateurs</text>
+                <line x1="190" y1="55" x2="235" y2="55" stroke="#dc2626" stroke-width="2" marker-end="url(#arr-blue)" />
+            </g>
+            <g transform="translate(780, 35)">
+                <rect width="150" height="100" rx="10" fill="#00758f" stroke="#0284c7" stroke-width="1.5"/>
+                <text x="75" y="30" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">MySQL 8.0</text>
+                <text x="75" y="50" text-anchor="middle" fill="#bae6fd" font-size="10">user_db</text>
+                <text x="75" y="75" text-anchor="middle" fill="#e0f2fe" font-size="9" font-weight="600">Port 3307</text>
+            </g>
+
+            <!-- MICROSERVICE 2: HOTEL SERVICE -->
+            <g transform="translate(540, 175)">
+                <rect width="190" height="110" rx="10" fill="#1e40af" stroke="#2563eb" stroke-width="1.5"/>
+                <text x="95" y="25" text-anchor="middle" fill="#bfdbfe" font-size="11" font-weight="700">hotel-service</text>
+                <text x="95" y="48" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="800">Java 17 / Spring Boot</text>
+                <text x="95" y="68" text-anchor="middle" fill="#dbeafe" font-size="10">Catalogue & Destinations</text>
+                <line x1="190" y1="55" x2="235" y2="55" stroke="#2563eb" stroke-width="2" marker-end="url(#arr-blue)" />
+            </g>
+            <g transform="translate(780, 180)">
+                <rect width="150" height="100" rx="10" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+                <text x="75" y="30" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">H2 Database</text>
+                <text x="75" y="50" text-anchor="middle" fill="#cbd5e1" font-size="10">test.db</text>
+                <text x="75" y="75" text-anchor="middle" fill="#e2e8f0" font-size="9" font-weight="600">Port 8082</text>
+            </g>
+
+            <!-- MICROSERVICE 3: BOOKING SERVICE -->
+            <g transform="translate(540, 320)">
+                <rect width="190" height="110" rx="10" fill="#d97706" stroke="#b45309" stroke-width="1.5"/>
+                <text x="95" y="25" text-anchor="middle" fill="#fef3c7" font-size="11" font-weight="700">booking-service</text>
+                <text x="95" y="48" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="800">Node.js / Express</text>
+                <text x="95" y="68" text-anchor="middle" fill="#fef3c7" font-size="10">Réservations & Snapshot</text>
+                <line x1="190" y1="55" x2="235" y2="55" stroke="#b45309" stroke-width="2" marker-end="url(#arr-blue)" />
+            </g>
+            <g transform="translate(780, 325)">
+                <rect width="150" height="100" rx="10" fill="#15803d" stroke="#16a34a" stroke-width="1.5"/>
+                <text x="75" y="30" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="800">MongoDB 6.0</text>
+                <text x="75" y="50" text-anchor="middle" fill="#bbf7d0" font-size="10">booking_db (NoSQL)</text>
+                <text x="75" y="75" text-anchor="middle" fill="#dcfce7" font-size="9" font-weight="600">Port 27017</text>
+            </g>
+        </svg>
+    </div>
+
+    <div class="instructions">
+        💡 <span>Comment faire la capture :</span> Ouvrez ce fichier ➔ Appuyez sur <b>Win + Maj + S</b> ➔ Collez directement dans Word au Chapitre 5 !
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,161 @@
+services:
+  # ── 1. AUTHENTIFICATION CENTRALISÉE (KEYCLOAK) ─────────────────────────
+  keycloak:
+    image: keycloak/keycloak:latest
+    container_name: tb_keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: start-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak-themes/tunisiebooking:/opt/keycloak/themes/tunisiebooking
+    networks:
+      - tb-network
+
+  # ── 2. SERVICE DISCOVERY (EUREKA SERVER) ───────────────────────────────
+  eureka-server:
+    build:
+      context: ./services/eureka-server
+    container_name: tb_eureka_server
+    ports:
+      - "8761:8761"
+    volumes:
+      - ./services/eureka-server:/app
+      - /app/node_modules
+    networks:
+      - tb-network
+
+  # ── 3. CONFIG SERVER (SPRING CLOUD CONFIG) ────────────────────────────
+  config-server:
+    build:
+      context: ./services/config-server
+    container_name: tb_config_server
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./services/config-server:/app
+      - /app/node_modules
+    networks:
+      - tb-network
+
+  # ── 4. API GATEWAY (NGINX ROUTING) ────────────────────────────────────
+  api-gateway:
+    image: nginx:alpine
+    container_name: tb_api_gateway
+    ports:
+      - "8000:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - keycloak
+      - eureka-server
+      - config-server
+      - user-service
+      - hotel-service
+      - booking-service
+    networks:
+      - tb-network
+
+  # ── 5. BASES DE DONNÉES (MySQL, H2, MongoDB) ───────────────────────────
+  mysql-db:
+    image: mysql:8.0
+    container_name: tb_mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: user_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - tb-network
+
+  h2-db:
+    image: oscarfonts/h2:latest
+    container_name: tb_h2_db
+    environment:
+      H2_OPTIONS: "-ifNotExists"
+    ports:
+      - "8082:81"
+      - "1522:1521"
+    volumes:
+      - h2_data:/opt/h2-data
+    networks:
+      - tb-network
+
+  mongodb:
+    image: mongo:6.0
+    container_name: tb_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: booking_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - tb-network
+
+  # ── 6. MICROSERVICES POLYGLOTTES TUNISIEBOOKING ────────────────────────
+  # Microservice 1 : Laravel 11 + MySQL
+  user-service:
+    build:
+      context: ./services/user-service
+    container_name: tb_user_service
+    environment:
+      DB_HOST: mysql-db
+      DB_NAME: user_db
+      DB_USER: root
+      DB_PASSWORD: root
+    volumes:
+      - ./services/user-service:/app
+      - /app/vendor
+    depends_on:
+      - mysql-db
+      - config-server
+    networks:
+      - tb-network
+
+  # Microservice 2 : Node.js / Express + H2 Database
+  hotel-service:
+    build:
+      context: ./services/hotel-service
+    container_name: tb_hotel_service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:h2:tcp://h2-db:1521/opt/h2-data/test;IFEXISTS=FALSE
+    volumes:
+      - ./services/hotel-service:/app
+      - /app/node_modules
+    depends_on:
+      - h2-db
+      - config-server
+    networks:
+      - tb-network
+
+  # Microservice 3 : Node.js + Express + MongoDB
+  booking-service:
+    build:
+      context: ./services/booking-service
+    container_name: tb_booking_service
+    environment:
+      MONGO_URI: mongodb://root:root@mongodb:27017/booking_db?authSource=admin
+    volumes:
+      - ./services/booking-service:/app
+      - /app/node_modules
+    depends_on:
+      - mongodb
+      - config-server
+    networks:
+      - tb-network
+
+networks:
+  tb-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  h2_data:
+  mongo_data:

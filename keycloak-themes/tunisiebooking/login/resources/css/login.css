@@ -1,0 +1,259 @@
+/* ============================================================
+   TunisieBooking — Keycloak Theme CSS (Clean Light Theme)
+   ============================================================ */
+
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* ── CSS Reset & Variables ───────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --pink:        #e91e8c;
+  --pink-dark:   #c2185b;
+  --pink-light:  #f472b6;
+  --green:       #85b919;
+  --bg-page:     #f8f9fa;
+  --card-bg:     #ffffff;
+  --border-color: #e2e8f0;
+  --text-main:   #1a1a2e;
+  --text-sub:    #334155;
+  --text-muted:  #64748b;
+  --radius:      24px;
+  --radius-sm:   14px;
+}
+
+/* ── Page Layout ─────────────────────────────────────────── */
+html, body {
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-page) !important;
+  color: var(--text-main) !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Keycloak wrapper overrides ──────────────────────────── */
+#kc-header, .kc-logo-text { display: none !important; }
+
+body > div#kc-container,
+body > div.login-pf-page,
+.login-pf-page { background: transparent !important; }
+
+/* Hide default Keycloak wrapper lines */
+.card-pf, .login-pf-page .card-pf {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Main centered card ──────────────────────────────────── */
+#kc-content,
+.kc-login-container {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* ── Auth Card ───────────────────────────────────────────── */
+#kc-form-wrapper,
+#kc-registration,
+#kc-registration-form,
+#kc-form {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 2.75rem 2.5rem;
+  width: 100% !important;
+  max-width: 620px !important;
+  box-sizing: border-box !important;
+  margin: 0 auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Brand header ────────────────────────────────────────── */
+.brand-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.brand-logo-card {
+  display: inline-block;
+  background: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 16px;
+  margin-bottom: 0.75rem;
+}
+
+.brand-logo-img {
+  height: 68px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+.brand-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── 2-Column Form Grid ─────────────────────────────────── */
+.form-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+@media (max-width: 580px) {
+  .form-grid-2col {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* ── Form groups ─────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 1.2rem;
+  position: relative;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 0.45rem;
+  letter-spacing: 0.01em;
+}
+
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.95rem 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  color: #0f172a !important;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  caret-color: var(--pink);
+}
+.form-input::placeholder { color: #94a3b8; }
+.form-input:focus {
+  border-color: var(--pink);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(233, 30, 140, 0.15);
+}
+
+/* autofill override for light theme */
+.form-input:-webkit-autofill,
+.form-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset, 0 0 0 3px rgba(233, 30, 140, 0.15) !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-color: var(--pink) !important;
+}
+
+/* ── Error messages ──────────────────────────────────────── */
+.pf-v5-c-alert, .alert, #kc-content-wrapper .alert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  color: #dc2626;
+  font-size: 0.82rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Remember me + Forgot password row ───────────────────── */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.75rem 0 1.5rem;
+}
+
+.checkbox label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+.checkbox input[type="checkbox"] {
+  width: 16px; height: 16px;
+  accent-color: var(--pink);
+  cursor: pointer;
+}
+
+.link-forgot {
+  font-size: 0.82rem;
+  color: var(--pink);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+.link-forgot:hover { color: var(--pink-dark); text-decoration: underline; }
+
+/* ── Primary button (Sign In) ────────────────────────────── */
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  background: var(--pink);
+  color: #ffffff !important;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 25px rgba(233, 30, 140, 0.25);
+}
+.btn-primary:hover {
+  background: var(--pink-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(233, 30, 140, 0.35);
+}
+.btn-primary:active { transform: translateY(0); }
+
+/* ── Register section ────────────────────────────────────── */
+.register-section {
+  text-align: center;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+.register-section span {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-right: 0.35rem;
+}
+.btn-secondary {
+  font-size: 0.85rem;
+  color: var(--pink);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.btn-secondary:hover { color: var(--pink-dark); text-decoration: underline; }
+
+/* ── Form actions row ────────────────────────────────────── */
+.form-actions { margin-top: 0.25rem; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 480px) {
+  #kc-form-wrapper { padding: 2rem 1.5rem; border-radius: 20px; }
+}
