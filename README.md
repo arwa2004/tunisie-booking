@@ -1,12 +1,64 @@
 # 🏨 TunisieBooking — Version Monolithique
-> **Plateforme de Réservation Hôtelière (Laravel 11 + Next.js 14 + MySQL 8.0)**  
-> **Auteur :** Arwa Ben Amar | **Organisme :** Spring Travel Services (TunisieBooking)
+> **Plateforme de Réservation Hôtelière en Tunisie (Laravel 11 + Next.js 14 + MySQL 8.0)**  
+> **Auteur :** Arwa Ben Amar | **Organisme d'accueil :** Spring Travel Services (TunisieBooking)
 
 ---
 
 ## 📌 Présentation
-Cette branche (`main` / `monolithic`) contient la version **monolithique en deux tiers** de la plateforme **TunisieBooking**.  
+Cette branche (`main` / `monolithic`) contient la version **monolithique en deux tiers (MVC / API REST)** de la plateforme **TunisieBooking**.  
 L'application associe un backend **Laravel 11 (API REST)** sécurisé par **Sanctum**, un frontend **Next.js 14 (App Router / TypeScript)** et une base de données relationnelle **MySQL 8.0**.
+
+---
+
+## 📐 Schéma & Détail de l'Architecture Monolithique
+
+### 1. Vue d'Ensemble de l'Architecture
+```
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                            NAVIGATEUR CLIENT                            │
+ │                        (Utilisateur Web / Mobile)                       │
+ └────────────────────────────────────┬────────────────────────────────────┘
+                                      │ HTTP / HTTPS (JSON)
+                                      ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                   COUCHE FRONTEND — Next.js 14 (Port 3000)               │
+ │  • App Router (React Server Components) & TypeScript strict             │
+ │  • NextAuth.js (Gestion de la session côté client)                      │
+ │  • Tailwind CSS (Interface utilisateur responsive)                      │
+ └────────────────────────────────────┬────────────────────────────────────┘
+                                      │ Requêtes API REST JSON
+                                      │ Authorization: Bearer <Token_Sanctum>
+                                      ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                   COUCHE BACKEND — Laravel 11 (Port 8000)                │
+ │  • Architecture MVC & Contrôleurs API REST                              │
+ │  • Laravel Sanctum (Authentification par jetons JWT / Bearer Tokens)    │
+ │  • Middlewares de Sécurité (EnsureUserIsAdmin, Throttle Rate Limiting) │
+ │  • Eloquent ORM (Mappage objet-relationnel & Validations métier)       │
+ └────────────────────────────────────┬────────────────────────────────────┘
+                                      │ Requêtes SQL / PDO
+                                      ▼
+ ┌─────────────────────────────────────────────────────────────────────────┐
+ │                 BASE DE DONNÉES RELATIONNELLE — MySQL 8.0               │
+ │  • Nom : tunisie_booking (Port 3306)                                   │
+ │  • 22 Migrations SQL · 11 Tables Métier                                │
+ │  • Clés étrangères & Contraintes d'intégrité référentielle               │
+ └─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2. Découpage en Couches Logicielles
+
+* **Couche Présentation (Frontend Next.js 14 - Port 3000) :**
+  - Interfaces utilisateurs SSR (Server-Side Rendering) et CSR (Client-Side Rendering) pour la recherche d'hôtels, la réservation et le dashboard admin.
+  - Interception des requêtes avec jetons Bearer stockés via NextAuth.js.
+
+* **Couche Métier & API REST (Backend Laravel 11 - Port 8000) :**
+  - **Gestion des formulaires & Validations :** Validation stricte des données entrantes (422 Unprocessable Entity en cas d'erreur).
+  - **Calcul tarifaire dynamique :** Calcul automatique selon la durée du séjour, la pension sélectionnée et la tranche d'âge des enfants (<2 ans gratuit, 2-11 ans +30 DT/nuit, >=12 ans +50 DT/nuit).
+  - **Gestion des rôles :** Ségrégation stricte entre les rôles `client` et `admin` via le middleware `EnsureUserIsAdmin`.
+
+* **Couche d'Accès aux Données (MySQL 8.0 - Port 3306) :**
+  - **11 Tables Métier :** `users`, `destinations`, `hotels`, `chambres`, `pensions`, `reservations`, `avis`, `favoris`, `voyages`, `services`, `hotel_photos`.
 
 ---
 
@@ -91,7 +143,7 @@ L'application Web est désormais accessible à l'adresse : **`http://localhost:3
 | Rôle | Adresse E-mail | Mot de passe |
 |---|---|---|
 | **Administrateur** | `admin@gmail.com` | `admin1234` |
-| **Client** | *(Créer via `/register` ou utiliser données seed)* | *(Choisi à l'inscription)* |
+| **Client Démo** | `client@gmail.com` | `client1234` |
 
 ---
 
@@ -128,21 +180,21 @@ node reports/run-stress-test.js
 
 ---
 
-## 📁 Architecture du Projet Monolithique
+## 📁 Arborescence du Projet Monolithique
 
 ```
 stage20252026/
 ├── server/                     # Backend Laravel 11 (API REST)
-│   ├── app/Http/Controllers/   # Contrôleurs API & Auth
+│   ├── app/Http/Controllers/   # 12 Contrôleurs API & Auth
 │   ├── app/Models/             # 11 Modèles Eloquent
 │   ├── database/migrations/    # 22 Migrations SQL
-│   ├── database/seeders/       # Seeders de données
-│   └── tests/                  # Tests PHPUnit (Unit & Feature)
+│   ├── database/seeders/       # Seeders de données de test
+│   └── tests/                  # 64 Tests PHPUnit (Unit & Feature)
 │
 ├── client/                     # Frontend Next.js 14 (App Router)
 │   ├── src/app/                # Pages (Hotels, Reservations, Admin, Profil)
-│   ├── src/components/         # Composants UI React
-│   └── e2e/                    # Tests E2E Playwright
+│   ├── src/components/         # 10 Composants UI React réutilisables
+│   └── e2e/                    # Tests E2E Playwright Chromium
 │
 └── reports/                    # Scripts & Rapports de test Excel
 ```
