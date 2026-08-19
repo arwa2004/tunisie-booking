@@ -2,12 +2,16 @@
 set -e
 
 # -------------------------------------------------------------
-# 1. Fix MPM Apache & Configuration du Port (Railway / Render)
+# 1. Configuration du Port Apache & Fix MPM (Railway / Render)
 # -------------------------------------------------------------
 PORT="${PORT:-8080}"
 echo "Configuration d'Apache sur le port ${PORT}..."
-rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf 2>/dev/null || true
-a2enmod mpm_prefork rewrite 2>/dev/null || true
+
+# Garantir que mpm_prefork est le SEUL module MPM actif
+rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* 2>/dev/null || true
+ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load 2>/dev/null || true
+ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf 2>/dev/null || true
+a2enmod rewrite 2>/dev/null || true
 
 sed -ri "s/Listen 80/Listen ${PORT}/g" /etc/apache2/ports.conf 2>/dev/null || true
 sed -ri "s/:80/:${PORT}/g" /etc/apache2/sites-available/000-default.conf 2>/dev/null || true
@@ -93,10 +97,6 @@ fi
 php artisan config:cache || true
 php artisan route:cache  || true
 php artisan view:cache   || true
-
-# Nettoyage strict des MPMs juste avant le démarrage d'Apache
-find /etc/apache2/mods-enabled/ -name "mpm_*.load" ! -name "mpm_prefork.load" -delete 2>/dev/null || true
-find /etc/apache2/mods-enabled/ -name "mpm_*.conf" ! -name "mpm_prefork.conf" -delete 2>/dev/null || true
 
 echo "Démarrage d'Apache sur le port ${PORT}..."
 exec apache2-foreground

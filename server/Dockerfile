@@ -19,11 +19,8 @@ RUN apt-get update && apt-get install -y \
 # --- Composer ---
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# --- Apache : Purge MPMs concurents + activer mpm_prefork & rewrite ---
-RUN find /etc/apache2/mods-enabled/ -name "mpm_*.load" ! -name "mpm_prefork.load" -delete 2>/dev/null || true \
-    && find /etc/apache2/mods-enabled/ -name "mpm_*.conf" ! -name "mpm_prefork.conf" -delete 2>/dev/null || true \
-    && a2enmod mpm_prefork rewrite
-
+# --- Apache : pointer vers /public + activer mod_rewrite ---
+RUN a2enmod rewrite
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
