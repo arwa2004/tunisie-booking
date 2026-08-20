@@ -17,81 +17,115 @@ class HotelSeeder extends Seeder
      */
     public function run(): void
     {
-        // On récupère nos destinations pour lier les hôtels
-        $hammamet = Destination::where('nom', 'Hammamet')->first();
-        $djerba = Destination::where('nom', 'Djerba')->first();
-        $sousse = Destination::where('nom', 'Sousse')->first();
+        // 1. Garantir que toutes les destinations existent
+        $hammamet = Destination::firstOrCreate(['nom' => 'Hammamet'], ['region' => 'Nabeul', 'image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500']);
+        $djerba   = Destination::firstOrCreate(['nom' => 'Djerba'],   ['region' => 'Médenine', 'image' => 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500']);
+        $sousse   = Destination::firstOrCreate(['nom' => 'Sousse'],   ['region' => 'Sousse', 'image' => 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500']);
+        $tabarka  = Destination::firstOrCreate(['nom' => 'Tabarka'],  ['region' => 'Jendouba', 'image' => 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600']);
+        $tozeur   = Destination::firstOrCreate(['nom' => 'Tozeur'],   ['region' => 'Tozeur', 'image' => 'https://images.unsplash.com/photo-1509023464722-18d996393ca8?w=600']);
 
-        // Hôtels à Hammamet
-        if ($hammamet) {
-            Hotel::firstOrCreate(
-                ['nom' => 'El Mouradi El Menzah'],
-                [
-                    'destination_id' => $hammamet->id,
-                    'prix_par_nuit' => 120,
-                    'etoiles' => 4,
-                    'description' => 'Situé au cœur de la station balnéaire de Yasmine Hammamet, cet hôtel propose un hébergement confortable à proximité directe de la plage.',
-                    'image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&auto=format&fit=crop&q=60',
-                    'disponible' => true
-                ]
-            );
+        // 2. Hôtels à Hammamet
+        Hotel::firstOrCreate(
+            ['nom' => 'El Mouradi El Menzah'],
+            [
+                'destination_id' => $hammamet->id,
+                'prix_par_nuit' => 120,
+                'etoiles' => 4,
+                'description' => 'Situé au cœur de la station balnéaire de Yasmine Hammamet, cet hôtel propose un hébergement confortable à proximité directe de la plage.',
+                'image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&auto=format&fit=crop&q=60',
+                'disponible' => true
+            ]
+        );
 
-            Hotel::firstOrCreate(
-                ['nom' => 'The Orangers Garden Villa & Bungalows'],
-                [
-                    'destination_id' => $hammamet->id,
-                    'prix_par_nuit' => 350,
-                    'etoiles' => 5,
-                    'description' => 'Un luxueux hôtel entouré de jardins d\'orangers avec un accès direct à une plage privée de sable fin.',
-                    'image' => 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&auto=format&fit=crop&q=60',
-                    'disponible' => true
-                ]
-            );
-        }
+        Hotel::firstOrCreate(
+            ['nom' => 'The Orangers Garden Villa & Bungalows'],
+            [
+                'destination_id' => $hammamet->id,
+                'prix_par_nuit' => 350,
+                'etoiles' => 5,
+                'description' => 'Un luxueux hôtel entouré de jardins d\'orangers avec un accès direct à une plage privée de sable fin.',
+                'image' => 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=500&auto=format&fit=crop&q=60',
+                'disponible' => true
+            ]
+        );
 
-        // Hôtels à Djerba
-        if ($djerba) {
-            Hotel::firstOrCreate(
-                ['nom' => 'Hasdrubal Prestige Thalassa & Spa Djerba'],
-                [
-                    'destination_id' => $djerba->id,
-                    'prix_par_nuit' => 450,
-                    'etoiles' => 5,
-                    'description' => 'Un havre de paix et de luxe sur la magnifique plage de Sidi Mehrez, réputé pour son centre de thalassothérapie haut de gamme.',
-                    'image' => 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500&auto=format&fit=crop&q=60',
-                    'disponible' => true
-                ]
-            );
+        // 3. Hôtels à Djerba
+        Hotel::firstOrCreate(
+            ['nom' => 'Hasdrubal Prestige Thalassa & Spa Djerba'],
+            [
+                'destination_id' => $djerba->id,
+                'prix_par_nuit' => 450,
+                'etoiles' => 5,
+                'description' => 'Un havre de paix et de luxe sur la magnifique plage de Sidi Mehrez, réputé pour son centre de thalassothérapie haut de gamme.',
+                'image' => 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=500&auto=format&fit=crop&q=60',
+                'disponible' => true
+            ]
+        );
 
-            Hotel::firstOrCreate(
-                ['nom' => 'Djerba Plaza Thalasso & Spa'],
-                [
-                    'destination_id' => $djerba->id,
-                    'prix_par_nuit' => 180,
-                    'etoiles' => 4,
-                    'description' => 'Alliant architecture traditionnelle djerbienne et confort moderne, au milieu d\'une superbe palmeraie.',
-                    'image' => 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=500&auto=format&fit=crop&q=60',
-                    'disponible' => true
-                ]
-            );
-        }
+        Hotel::firstOrCreate(
+            ['nom' => 'Djerba Plaza Thalasso & Spa'],
+            [
+                'destination_id' => $djerba->id,
+                'prix_par_nuit' => 180,
+                'etoiles' => 4,
+                'description' => 'Alliant architecture traditionnelle djerbienne et confort moderne, au milieu d\'une superbe palmeraie.',
+                'image' => 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=500&auto=format&fit=crop&q=60',
+                'disponible' => true
+            ]
+        );
 
-        // Hôtels à Sousse
-        if ($sousse) {
-            Hotel::firstOrCreate(
-                ['nom' => 'Mövenpick Resort & Marine Spa Sousse'],
-                [
-                    'destination_id' => $sousse->id,
-                    'prix_par_nuit' => 280,
-                    'etoiles' => 5,
-                    'description' => 'Idéalement situé au centre de Sousse, avec une plage de sable fin privée, des piscines d\'eau de mer et des restaurants gastronomiques.',
-                    'image' => 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&auto=format&fit=crop&q=60',
-                    'disponible' => true
-                ]
-            );
-        }
+        // 4. Hôtels à Sousse
+        Hotel::firstOrCreate(
+            ['nom' => 'Mövenpick Resort & Marine Spa Sousse'],
+            [
+                'destination_id' => $sousse->id,
+                'prix_par_nuit' => 280,
+                'etoiles' => 5,
+                'description' => 'Idéalement situé au centre de Sousse, avec une plage de sable fin privée, des piscines d\'eau de mer et des restaurants gastronomiques.',
+                'image' => 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&auto=format&fit=crop&q=60',
+                'disponible' => true
+            ]
+        );
 
-        // Générer des chambres pour chaque hôtel
+        Hotel::firstOrCreate(
+            ['nom' => 'Marhaba Royal Salem'],
+            [
+                'destination_id' => $sousse->id,
+                'prix_par_nuit' => 160,
+                'etoiles' => 4,
+                'description' => 'Un resort familial pieds dans l\'eau niché dans un jardin verdoyant de palmiers et d\'eucalyptus.',
+                'image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&auto=format&fit=crop&q=60',
+                'disponible' => true
+            ]
+        );
+
+        // 5. Hôtels à Tabarka
+        Hotel::firstOrCreate(
+            ['nom' => 'La Cigale Tabarka Hôtel Spa & Golf'],
+            [
+                'destination_id' => $tabarka->id,
+                'prix_par_nuit' => 380,
+                'etoiles' => 5,
+                'description' => 'Un joyau entre forêt de pins et mer Méditerranée, idéal pour le golf et la relaxation.',
+                'image' => 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600&auto=format',
+                'disponible' => true
+            ]
+        );
+
+        // 6. Hôtels à Tozeur
+        Hotel::firstOrCreate(
+            ['nom' => 'Anantara Tozeur Resort'],
+            [
+                'destination_id' => $tozeur->id,
+                'prix_par_nuit' => 420,
+                'etoiles' => 5,
+                'description' => 'Une oasis de luxe aux portes du désert du Sahara, offrant une expérience unique entre dunes et palmeraie.',
+                'image' => 'https://images.unsplash.com/photo-1509023464722-18d996393ca8?w=600&auto=format',
+                'disponible' => true
+            ]
+        );
+
+        // 7. Générer des chambres pour TOUS les hôtels
         $hotels = Hotel::all();
         foreach ($hotels as $hotel) {
             Chambre::firstOrCreate(
@@ -105,28 +139,6 @@ class HotelSeeder extends Seeder
                 ]
             );
             Chambre::firstOrCreate(
-                ['hotel_id' => $hotel->id, 'nom' => 'Chambre Single Vue Piscine'],
-                [
-                    'type' => 'simple',
-                    'prix_base_nuit' => (int) round($hotel->prix_par_nuit * 0.95),
-                    'capacite_adultes' => 1,
-                    'capacite_enfants' => 0,
-                    'quantite' => 5,
-                ]
-            );
-            Chambre::firstOrCreate(
-                ['hotel_id' => $hotel->id, 'nom' => 'Chambre Single Vue Mer'],
-                [
-                    'type' => 'simple',
-                    'prix_base_nuit' => (int) round($hotel->prix_par_nuit * 1.1),
-                    'capacite_adultes' => 1,
-                    'capacite_enfants' => 0,
-                    'quantite' => 3,
-                ]
-            );
-
-            // --- CHAMBRES DOUBLES ---
-            Chambre::firstOrCreate(
                 ['hotel_id' => $hotel->id, 'nom' => 'Chambre Double Standard'],
                 [
                     'type' => 'double',
@@ -136,28 +148,6 @@ class HotelSeeder extends Seeder
                     'quantite' => 12,
                 ]
             );
-            Chambre::firstOrCreate(
-                ['hotel_id' => $hotel->id, 'nom' => 'Chambre Double Vue Piscine'],
-                [
-                    'type' => 'double',
-                    'prix_base_nuit' => (int) round($hotel->prix_par_nuit * 1.15),
-                    'capacite_adultes' => 2,
-                    'capacite_enfants' => 1,
-                    'quantite' => 8,
-                ]
-            );
-            Chambre::firstOrCreate(
-                ['hotel_id' => $hotel->id, 'nom' => 'Chambre Double Vue Mer'],
-                [
-                    'type' => 'double',
-                    'prix_base_nuit' => (int) round($hotel->prix_par_nuit * 1.3),
-                    'capacite_adultes' => 2,
-                    'capacite_enfants' => 1,
-                    'quantite' => 6,
-                ]
-            );
-
-            // --- CHAMBRES TRIPLES ---
             Chambre::firstOrCreate(
                 ['hotel_id' => $hotel->id, 'nom' => 'Chambre Triple Vue Jardin'],
                 [
@@ -169,18 +159,6 @@ class HotelSeeder extends Seeder
                 ]
             );
             Chambre::firstOrCreate(
-                ['hotel_id' => $hotel->id, 'nom' => 'Chambre Triple Vue Mer'],
-                [
-                    'type' => 'triple',
-                    'prix_base_nuit' => (int) round($hotel->prix_par_nuit * 1.55),
-                    'capacite_adultes' => 3,
-                    'capacite_enfants' => 1,
-                    'quantite' => 4,
-                ]
-            );
-
-            // --- SUITES FAMILIALES ---
-            Chambre::firstOrCreate(
                 ['hotel_id' => $hotel->id, 'nom' => 'Suite Familiale Standard'],
                 [
                     'type' => 'familiale',
@@ -190,19 +168,9 @@ class HotelSeeder extends Seeder
                     'quantite' => 4,
                 ]
             );
-            Chambre::firstOrCreate(
-                ['hotel_id' => $hotel->id, 'nom' => 'Suite Familiale Vue Mer'],
-                [
-                    'type' => 'familiale',
-                    'prix_base_nuit' => (int) round($hotel->prix_par_nuit * 2.0),
-                    'capacite_adultes' => 4,
-                    'capacite_enfants' => 2,
-                    'quantite' => 3,
-                ]
-            );
         }
 
-        // ── PENSIONS ──────────────────────────────────────────────────────
+        // 8. Pensions
         $pensionPD  = Pension::firstOrCreate(['nom' => 'Petit Déjeuner']);
         $pensionDP  = Pension::firstOrCreate(['nom' => 'Demi Pension']);
         $pensionAIS = Pension::firstOrCreate(['nom' => 'All Inclusive Soft']);
@@ -218,7 +186,7 @@ class HotelSeeder extends Seeder
             ]);
         }
 
-        // ── SERVICES ──────────────────────────────────────────────────────
+        // 9. Services
         $wifi       = Service::firstOrCreate(['nom' => 'WiFi Gratuit'],    ['icone' => '📶']);
         $piscine    = Service::firstOrCreate(['nom' => 'Piscine'],         ['icone' => '🏊']);
         $spa        = Service::firstOrCreate(['nom' => 'Spa & Bien-être'], ['icone' => '💆']);
@@ -233,14 +201,12 @@ class HotelSeeder extends Seeder
         foreach ($hotels as $hotel) {
             if ($hotel->etoiles >= 5) {
                 $hotel->services()->syncWithoutDetaching(collect($tousLesServices)->pluck('id'));
-            } elseif ($hotel->etoiles >= 4) {
-                $hotel->services()->syncWithoutDetaching([$wifi->id, $piscine->id, $restaurant->id, $parking->id, $clim->id]);
             } else {
-                $hotel->services()->syncWithoutDetaching([$wifi->id, $restaurant->id, $parking->id, $clim->id]);
+                $hotel->services()->syncWithoutDetaching([$wifi->id, $piscine->id, $restaurant->id, $parking->id, $clim->id]);
             }
         }
 
-        // ── PHOTOS ────────────────────────────────────────────────────────
+        // 10. Photos
         $photosParDefaut = [
             ['url' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800', 'alt_text' => 'Vue extérieure'],
             ['url' => 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800', 'alt_text' => 'Hall d\'accueil'],
