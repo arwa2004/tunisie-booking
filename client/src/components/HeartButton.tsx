@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://affectionate-transformation-production.up.railway.app/api";
 
 interface HeartButtonProps {
   hotelId: number;

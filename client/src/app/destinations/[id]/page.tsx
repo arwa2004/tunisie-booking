@@ -37,7 +37,7 @@ interface PageProps {
 }
 
 async function getDestination(id: string): Promise<Destination | null> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://affectionate-transformation-production.up.railway.app/api";
   try {
     const res = await fetch(`${apiUrl}/destinations/${id}`, { cache: "no-store" });
     if (res.ok) {
@@ -50,7 +50,7 @@ async function getDestination(id: string): Promise<Destination | null> {
 }
 
 async function getAllDestinations(): Promise<{ id: number; nom: string; region: string }[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://affectionate-transformation-production.up.railway.app/api";
   try {
     const res = await fetch(`${apiUrl}/destinations`, { cache: "no-store" });
     if (res.ok) return await res.json();

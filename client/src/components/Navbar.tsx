@@ -59,7 +59,7 @@ export default function Navbar() {
     // Si connecté via localStorage (email/mot de passe)
     const token = localStorage.getItem("token");
     if (token) {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://affectionate-transformation-production.up.railway.app/api";
       fetch(`${apiUrl}/logout`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

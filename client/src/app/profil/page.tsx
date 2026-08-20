@@ -14,8 +14,10 @@ interface User {
   photo: string | null;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-const BASE_URL = "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://affectionate-transformation-production.up.railway.app/api";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace("/api", "")
+  : "https://affectionate-transformation-production.up.railway.app";
 
 export default function ProfilPage() {
   const router = useRouter();
