@@ -94,6 +94,7 @@ fi
 # -------------------------------------------------------------
 # 5. Cache Prod & Démarrage d'Apache
 # -------------------------------------------------------------
+php artisan cache:clear  || true
 php artisan config:cache || true
 php artisan route:cache  || true
 php artisan view:cache   || true
