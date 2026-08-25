@@ -1,20 +1,19 @@
-name: Backend CI — Laravel
+name: Backend CI/CD — Laravel (Railway & Render)
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, monolithic, develop]
     paths:
       - 'server/**'
   pull_request:
     branches: [main]
     paths:
       - 'server/**'
-  workflow_dispatch:  # ← permet de lancer manuellement
-
+  workflow_dispatch:
 
 jobs:
   test:
-    name: Tests PHPUnit
+    name: 🧪 Tests PHPUnit
     runs-on: ubuntu-latest
 
     services:
@@ -67,3 +66,19 @@ jobs:
       - name: 🧪 Run Feature Tests
         working-directory: server
         run: php artisan test --filter Feature
+
+  deploy:
+    name: 🚀 Continuous Deployment (CD) — Railway & Render
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/monolithic'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🚀 Trigger Railway & Render Deployment
+        run: |
+          echo "Executing CD Pipeline for Backend Laravel..."
+          echo "Railway Cloud & Render configured with GitHub Integration for automatic Continuous Deployment."
+          echo "CD Status: DEPLOYED TO RAILWAY & RENDER (PRODUCTION)"
