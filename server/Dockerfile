@@ -5,7 +5,7 @@
 
 FROM php:8.2-apache
 
-# --- Extensions systeme + PHP necessaires a Laravel / MySQL ---
+# --- Extensions systeme + PHP necessaires a Laravel / MySQL / SQLite ---
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl gd \
+    libsqlite3-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_sqlite mbstring zip exif pcntl gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # --- Composer ---

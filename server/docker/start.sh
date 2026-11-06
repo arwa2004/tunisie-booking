@@ -71,6 +71,15 @@ if [ -n "$DB_HOST" ]; then
         echo "⏳ En attente de MySQL (tentative $i/10)... pause 3s"
         sleep 3
     done
+else
+    echo "Aucun DB_HOST specifie -> Initialisation automatique de SQLite..."
+    mkdir -p /var/www/html/database
+    touch /var/www/html/database/database.sqlite
+    chown -R www-data:www-data /var/www/html/database
+    chmod -R 775 /var/www/html/database
+    export DB_CONNECTION=sqlite
+    export DB_DATABASE=/var/www/html/database/database.sqlite
+    CONNECTED=1
 fi
 
 # -------------------------------------------------------------
