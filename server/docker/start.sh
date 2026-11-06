@@ -50,33 +50,39 @@ echo "  DB_PASSWORD = ${DB_PASSWORD:+[DEFINI]}"
 echo "================="
 
 # -------------------------------------------------------------
-# 3. Attente rapide de MySQL
+# 3. Attente de MySQL ou Bascule automatique sur SQLite
 # -------------------------------------------------------------
+mkdir -p /var/www/html/storage/logs /var/www/html/storage/framework/sessions /var/www/html/storage/framework/views /var/www/html/storage/framework/cache /var/www/html/database
+touch /var/www/html/storage/logs/laravel.log
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+
 CONNECTED=0
 if [ -n "$DB_HOST" ]; then
     echo "Attente de MySQL sur ${DB_HOST}:${DB_PORT:-3306}..."
-    for i in $(seq 1 10); do
+    for i in $(seq 1 5); do
         RESULT=$(php -r "
             try {
                 \$dsn = 'mysql:host='.getenv('DB_HOST').';port='.(getenv('DB_PORT')?:'3306').';dbname='.(getenv('DB_DATABASE')?:'railway').';charset=utf8mb4';
-                new PDO(\$dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'), [PDO::ATTR_TIMEOUT=>5]);
+                new PDO(\$dsn, getenv('DB_USERNAME'), getenv('DB_PASSWORD'), [PDO::ATTR_TIMEOUT=>4]);
                 echo 'OK';
             } catch(\Throwable \$e) { echo 'FAIL'; }
         " 2>/dev/null)
         if [ "$RESULT" = "OK" ]; then
-            echo "✅ MySQL connecté (tentative $i/10)!"
+            echo "✅ MySQL connecté (tentative $i/5)!"
             CONNECTED=1
             break
         fi
-        echo "⏳ En attente de MySQL (tentative $i/10)... pause 3s"
-        sleep 3
+        echo "⏳ En attente de MySQL (tentative $i/5)... pause 2s"
+        sleep 2
     done
-else
-    echo "Aucun DB_HOST specifie -> Initialisation automatique de SQLite..."
-    mkdir -p /var/www/html/database
+fi
+
+if [ $CONNECTED -eq 0 ]; then
+    echo "Bascule automatique et securisee sur SQLite..."
     touch /var/www/html/database/database.sqlite
     chown -R www-data:www-data /var/www/html/database
-    chmod -R 775 /var/www/html/database
+    chmod -R 777 /var/www/html/database
     export DB_CONNECTION=sqlite
     export DB_DATABASE=/var/www/html/database/database.sqlite
     CONNECTED=1
