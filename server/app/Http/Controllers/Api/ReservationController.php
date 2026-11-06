@@ -91,9 +91,10 @@ class ReservationController extends Controller
 
         // ✅ Notification webhook n8n → envoi de l'email de confirmation
         try {
+            $n8nBase = rtrim(env('N8N_BASE_URL', 'https://arwabenamar.app.n8n.cloud'), '/');
             Http::withHeaders([
-                'X-Webhook-Secret' => 'Kharkhour_2024',
-            ])->post('https://arwabenamar.app.n8n.cloud/webhook/nouvelle-reservation', [
+                'X-Webhook-Secret' => env('N8N_WEBHOOK_SECRET', 'Kharkhour_2024'),
+            ])->post($n8nBase . '/webhook/nouvelle-reservation', [
                 'user_email'   => $reservation->user->email ?? '',
                 'user_nom'     => $reservation->user->nom ?? $reservation->user->name ?? '',
                 'hotel_nom'    => $reservation->hotel->nom ?? '',
@@ -161,9 +162,10 @@ class ReservationController extends Controller
         // ✅ Notification webhook n8n → informer le client du changement de statut
         try {
             $reservation->load(['user', 'hotel']);
+            $n8nBase = rtrim(env('N8N_BASE_URL', 'https://arwabenamar.app.n8n.cloud'), '/');
             $response = Http::withHeaders([
-                'X-Webhook-Secret' => 'Kharkhour_2024',
-            ])->post('https://arwabenamar.app.n8n.cloud/webhook/statut-reservation', [
+                'X-Webhook-Secret' => env('N8N_WEBHOOK_SECRET', 'Kharkhour_2024'),
+            ])->post($n8nBase . '/webhook/statut-reservation', [
                 'user_email'   => $reservation->user->email ?? '',
                 'user_nom'     => $reservation->user->nom ?? $reservation->user->name ?? '',
                 'hotel_nom'    => $reservation->hotel->nom ?? '',
@@ -206,9 +208,10 @@ class ReservationController extends Controller
         // ✅ Notification webhook n8n → informer le client de la suppression
         try {
             $reservation->load(['user', 'hotel']);
+            $n8nBase = rtrim(env('N8N_BASE_URL', 'https://arwabenamar.app.n8n.cloud'), '/');
             Http::withHeaders([
-                'X-Webhook-Secret' => 'Kharkhour_2024',
-            ])->post('https://arwabenamar.app.n8n.cloud/webhook/statut-reservation', [
+                'X-Webhook-Secret' => env('N8N_WEBHOOK_SECRET', 'Kharkhour_2024'),
+            ])->post($n8nBase . '/webhook/statut-reservation', [
                 'user_email'   => $reservation->user->email ?? '',
                 'user_nom'     => $reservation->user->nom ?? $reservation->user->name ?? '',
                 'hotel_nom'    => $reservation->hotel->nom ?? '',
