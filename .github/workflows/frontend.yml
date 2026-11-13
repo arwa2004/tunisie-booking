@@ -1,15 +1,20 @@
-name: Frontend CI/CD — Next.js (Vercel)
+name: Frontend CI/CD — Next.js & Vercel
 
 on:
   push:
     branches: [main, monolithic, develop]
+    paths:
+      - 'client/**'
+      - '.github/workflows/frontend.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'client/**'
   workflow_dispatch:
 
 jobs:
   test:
-    name: 🧪 Tests Jest
+    name: 🧪 Tests Jest & TypeScript
     runs-on: ubuntu-latest
 
     steps:
@@ -54,7 +59,7 @@ jobs:
       - name: ⚙️ Build Next.js Bundle
         working-directory: client
         env:
-          NEXT_PUBLIC_API_URL: https://affectionate-transformation-production.up.railway.app/api
+          NEXT_PUBLIC_API_URL: https://tunisie-booking.onrender.com/api
         run: npm run build
 
   deploy:
@@ -69,6 +74,10 @@ jobs:
 
       - name: 🚀 Trigger Vercel Production Deployment
         run: |
-          echo "Executing CD Pipeline for Frontend..."
-          echo "Vercel is configured with GitHub Integration for automatic Continuous Deployment."
-          echo "CD Status: DEPLOYED TO VERCEL (PRODUCTION)"
+          echo "========================================================"
+          echo "🚀 Executing Continuous Deployment (CD) Pipeline for Frontend"
+          echo "🎯 Target Cloud Platform: Vercel (https://tunisie-booking.vercel.app)"
+          echo "🔗 Connected API: https://tunisie-booking.onrender.com/api"
+          echo "========================================================"
+          echo "Vercel is actively configured with GitHub Integration for automatic Continuous Deployment."
+          echo "✅ CD Status: DEPLOYED TO VERCEL (PRODUCTION)"

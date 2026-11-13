@@ -114,7 +114,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "tunisiebooking_secret_key_2025_2026_super_secure",
 };
 
 const handler = NextAuth(authOptions);

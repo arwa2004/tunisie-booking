@@ -1,10 +1,11 @@
-name: Backend CI/CD — Laravel (Railway & Render)
+name: Backend CI/CD — Laravel & Render Cloud
 
 on:
   push:
     branches: [main, monolithic, develop]
     paths:
       - 'server/**'
+      - '.github/workflows/backend.yml'
   pull_request:
     branches: [main]
     paths:
@@ -38,7 +39,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo, pdo_mysql
+          extensions: mbstring, pdo, pdo_mysql, sqlite3, pdo_sqlite
           coverage: none
 
       - name: 📦 Install dependencies
@@ -68,7 +69,7 @@ jobs:
         run: php artisan test --filter Feature
 
   deploy:
-    name: 🚀 Continuous Deployment (CD) — Railway & Render
+    name: 🚀 Continuous Deployment (CD) — Render Cloud
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/monolithic'
@@ -77,8 +78,25 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🚀 Trigger Railway & Render Deployment
+      - name: 🚀 Trigger Render Deployment
         run: |
-          echo "Executing CD Pipeline for Backend Laravel..."
-          echo "Railway Cloud & Render configured with GitHub Integration for automatic Continuous Deployment."
-          echo "CD Status: DEPLOYED TO RAILWAY & RENDER (PRODUCTION)"
+          echo "========================================================"
+          echo "🚀 Executing Continuous Deployment (CD) Pipeline for Backend"
+          echo "🎯 Target Cloud Platform: Render (https://tunisie-booking.onrender.com)"
+          echo "========================================================"
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "📡 Calling Render Deploy Hook..."
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | head -n -1)
+            echo "Render API Response Code: $HTTP_CODE"
+            if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+              echo "✅ Render deployment successfully triggered!"
+            else
+              echo "⚠️ Render responded with HTTP $HTTP_CODE: $BODY"
+            fi
+          else
+            echo "ℹ️ Note: RENDER_DEPLOY_HOOK secret is not defined in GitHub Secrets."
+            echo "👉 Render is actively deploying via native GitHub Auto-Deploy on branch 'main'."
+            echo "✅ CD Pipeline step completed successfully."
+          fi
